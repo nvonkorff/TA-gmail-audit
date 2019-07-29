@@ -13,6 +13,10 @@ import socks
 from Utilities import Utilities, KennyLoggins
 from oauth2client.client import OAuth2WebServerFlow
 
+# import imp
+# modfile, pathname, description = imp.find_module('httplib2', ['/opt/splunk/etc/apps/TA-gmail-audit/bin/'])
+# httplib2 = imp.load_module('httplib2', modfile, pathname, description)
+
 _APP_NAME = 'TA-gmail-audit'
 dir = os.path.join(util.get_apps_dir(), _APP_NAME, 'bin', 'lib')
 
@@ -99,6 +103,7 @@ class gmail_authorize(splunk.rest.BaseRestHandler):
                                                     proxy_pass=pc["authentication"]["password"])
                 except Exception, e:
                     logger.warn("action=load_proxy status=failed message=No_Proxy_Information stanza=gapps_proxy")
+            # logger.info("proxy_info={0}".format(proxy_info.__dict__))
             h = httplib2.Http(proxy_info=proxy_info)
             credentials = sflow.step2_exchange(gapps_auth_token, h)
             my_credentials = "{}".format(credentials.to_json())

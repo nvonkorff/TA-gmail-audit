@@ -1,1 +1,1 @@
-__version__='GSuiteForSplunk.v1.2.3.b220'
+__version__='TA-gmail-audit.1.0.2'

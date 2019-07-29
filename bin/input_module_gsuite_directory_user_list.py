@@ -150,8 +150,26 @@ def run(session_key, domain, splunk_host, auth_token):
         MI._catch_error("operation=load_credentials error_message={} config={}".format("No Credentials Found in Store", MI.get_config("name")))
         sys.exit(_SYS_EXIT_FAILED_GET_OAUTH_CREDENTIALS)
 
+    proxy_config_file = os.path.join(_app_local_directory, "proxy.conf")
+    proxy_info = None
+    h = None
+
+    utils = Utilities(app_name=_APP_NAME, session_key=session_key)
+    if os.path.isfile(proxy_config_file):
+        try:
+            pc = utils.get_proxy_configuration("gapps_proxy")
+            sptype = socks.PROXY_TYPE_HTTP
+            proxy_info = httplib2.ProxyInfo(sptype, pc["host"], int(pc["port"]),
+                                            proxy_user=pc["authentication"]["username"],
+                                            proxy_pass=pc["authentication"]["password"])
+        except Exception, e:
+            log.warn("action=load_proxy status=failed message=No_Proxy_Information stanza=gapps_proxy")
+
+    log.info("proxy_info={0}".format(proxy_info.__dict__))
+
     # Build HTTP session using OAuth creds
-    http = httplib2.Http(proxy_info=None)
+    http = httplib2.Http(proxy_info=proxy_info)
+
     credentials = oauth2client.client.OAuth2Credentials.from_json(json.dumps(google_oauth_credentials))
     http_session = credentials.authorize(http)
     

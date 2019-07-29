@@ -353,7 +353,7 @@ def process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_do
             log_to_hec('Error: "from" address domain regex failed: {0}'.format(from_addr))
             continue
 
-        log_to_hec('to_domains: {0} from_domain: {1} to_addr: {2} local_domains: {3}'.format(to_domain, from_domain, to_addr, local_domains))
+        # log_to_hec('to_domains: {0} from_domain: {1} to_addr: {2} local_domains: {3}'.format(to_domain, from_domain, to_addr, local_domains))
 
         regex = '^(?!({0})).*'.format("|".join(local_domains))
 
@@ -433,8 +433,26 @@ def refresh_auth_token(domain, app_name, session_key):
         log.error("operation=load_credentials error_message={}".format("No Credentials Found in Store"))
         sys.exit(_SYS_EXIT_FAILED_GET_OAUTH_CREDENTIALS)
 
+    proxy_config_file = os.path.join(_app_local_directory, "proxy.conf")
+    proxy_info = None
+    h = None
+
+    utils = Utilities(app_name=_APP_NAME, session_key=session_key)
+    if os.path.isfile(proxy_config_file):
+        try:
+            pc = utils.get_proxy_configuration("gapps_proxy")
+            sptype = socks.PROXY_TYPE_HTTP
+            proxy_info = httplib2.ProxyInfo(sptype, pc["host"], int(pc["port"]),
+                                            proxy_user=pc["authentication"]["username"],
+                                            proxy_pass=pc["authentication"]["password"])
+        except Exception, e:
+            log.warn("action=load_proxy status=failed message=No_Proxy_Information stanza=gapps_proxy")
+
+    log.info("proxy_info={0}".format(proxy_info.__dict__))
+
     # Build HTTP session using OAuth creds
-    http = httplib2.Http(proxy_info=None)
+    http = httplib2.Http(proxy_info=proxy_info)
+
     credentials = oauth2client.client.OAuth2Credentials.from_json(json.dumps(google_oauth_credentials))
 
     http_session = credentials.authorize(http)
@@ -527,7 +545,7 @@ def run(session_key, domain, splunk_host, auth_token, batch_size, local_domains)
             m_id = msg['id'] # get id of individual message
             message_ids.append(m_id)
 
-        process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token)
+        process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains)
         
         processed_message_count += len(msg_list)
 
