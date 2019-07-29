@@ -78,6 +78,29 @@ If anyone knows how to get that limit increased, please let me know and I will g
 * Enter the hostname to which to send events (in most cases this should be localhost, where the HEC token is configured)
 * Enter a batch size of audit messages to process. 20 is a good default as it does not seem to run into API limits.
 
+
+# Troubleshooting
+
+## Proxy
+
+If you see any errors like this, it is likely that there is another add-on installed in your environment that has a httplib2 module included in its directory structure. 
+
+`2019-07-25 03:56:09,304 log_level=ERROR pid=89865 tid=MainThread file="gmail_authorize.py" function="handle_GET" line_number="112" version="TA-gmail-audit.1.0.1" {'errors': [{'msg': 'setproxy() takes at most 7 arguments (8 given)', 'exception_type': 'TypeError', 'line': 104, 'exception_arguments': 'setproxy() takes at most 7 arguments (8 given)', 'filename': 'gmail_authorize.py'}], 'log_level': 'ERROR'}`
+
+Any submodules included in any apps installed/enabled are visible to Splunk Python, so if you say "include httplib2" in your module, you have no guarantee that the module included in your app folder is going to be used. I think it simply uses the first one it finds.
+
+If you run into this error, modify the /opt/splunk/etc/apps/TA-gmail-audit/bin/gmail_authorize.py script and uncomment the following lines:
+
+~~~~
+# import imp
+# modfile, pathname, description = imp.find_module('httplib2', ['/opt/splunk/etc/apps/TA-gmail-audit/bin/'])
+# httplib2 = imp.load_module('httplib2', modfile, pathname, description)`
+~~~~
+
+Obviosuly adjust the path if your Splunk and add-on are installed in a location other than '/opt/splunk/etc/apps/TA-gmail-audit/bin/'
+
+This ensures the httlib2 module included in the Gmail Audit TA folder is used and not any other httplib2 modules found in other apps/add-ons.
+
 # Acknowledgments
 Development of this add-on was commissioned by Qantas Airways. Qantas kindly agreed to allow this to add-on to be released to Splunkbase to support the Splunk community.
 
