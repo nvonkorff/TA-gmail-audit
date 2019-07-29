@@ -1,0 +1,7 @@
+<nav search_view="search" color="#3C444D">
+<view name="inputs" default="true" />
+<collection label="Configuration">
+<view name="App_Config" label="Application Configuration"/>
+</collection>
+<view name="search" label="Search"/>
+</nav>
