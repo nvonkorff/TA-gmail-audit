@@ -318,19 +318,21 @@ def process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_do
         to_addr = ('{0} {1}'.format(to_addr, cc_addr))
         from_addr = headers.get("From","")
 
-        # Extract any links from original email body
-        body_payload = body_data[m_id]
+        if m_id in body_data:
 
-        links = re.findall(r'(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-;]*[\w@?^=%&\/~+#-])?', body_payload)
-        email_links = []
+            # Extract any links from original email body
+            body_payload = body_data[m_id]
 
-        for link in links:
-           link_url = link[0] + "://" + link[1] + link[2]
-           if not link_url in email_links:
-             email_links.append(link_url)
+            links = re.findall(r'(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-;]*[\w@?^=%&\/~+#-])?', body_payload)
+            email_links = []
 
-        if email_links:
-             headers["links"] = email_links
+            for link in links:
+               link_url = link[0] + "://" + link[1] + link[2]
+               if not link_url in email_links:
+                 email_links.append(link_url)
+
+            if email_links:
+                 headers["links"] = email_links
 
         # Determine direction of message based on domains in from/to addresses
         from_domain = []
@@ -376,7 +378,7 @@ def process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_do
             head, sep, tail = msg_date.partition('(')
             msg_date = head
         else:
-            msg_date = datetime.datetime.now()
+            msg_date = datetime.now()
 
 
         get_date_obj = dateutil.parser.parse(str(msg_date))
@@ -457,7 +459,7 @@ def refresh_auth_token(domain, app_name, session_key):
 
     http_session = credentials.authorize(http)
 
-    service = build('gmail', 'v1', http=http_session)
+    service = build('gmail', 'v1', http=http_session, cache_discovery=False)
 
 
     token_info = credentials.get_access_token(http_session)

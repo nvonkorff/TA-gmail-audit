@@ -85,7 +85,7 @@ If anyone knows how to get that limit increased, please let me know and I will g
 
 If you see any errors like this, it is likely that there is another add-on installed in your environment that has a httplib2 module included in its directory structure. 
 
-`2019-07-25 03:56:09,304 log_level=ERROR pid=89865 tid=MainThread file="gmail_authorize.py" function="handle_GET" line_number="112" version="TA-gmail-audit.1.0.1" {'errors': [{'msg': 'setproxy() takes at most 7 arguments (8 given)', 'exception_type': 'TypeError', 'line': 104, 'exception_arguments': 'setproxy() takes at most 7 arguments (8 given)', 'filename': 'gmail_authorize.py'}], 'log_level': 'ERROR'}`
+`2019-07-25 03:56:09,304 log_level=ERROR pid=89865 tid=MainThread file="gmail_authorize.py" function="handle_GET" line_number="112" version="TA-gmail-audit.1.0.3" {'errors': [{'msg': 'setproxy() takes at most 7 arguments (8 given)', 'exception_type': 'TypeError', 'line': 104, 'exception_arguments': 'setproxy() takes at most 7 arguments (8 given)', 'filename': 'gmail_authorize.py'}], 'log_level': 'ERROR'}`
 
 Any submodules included in any apps installed/enabled are visible to Splunk Python, so if you say "include httplib2" in your module, you have no guarantee that the module included in your app folder is going to be used. I think it simply uses the first one it finds.
 

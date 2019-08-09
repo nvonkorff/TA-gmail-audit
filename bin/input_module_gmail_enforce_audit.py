@@ -240,7 +240,7 @@ def refresh_auth_token(domain, app_name, session_key):
 
     http_session = credentials.authorize(http)
 
-    service = build('admin', 'directory_v1', http=http_session)
+    service = build('admin', 'directory_v1', http=http_session, cache_discovery=False)
 
     token_info = credentials.get_access_token(http_session)
 

@@ -173,7 +173,7 @@ def run(session_key, domain, splunk_host, auth_token):
     credentials = oauth2client.client.OAuth2Credentials.from_json(json.dumps(google_oauth_credentials))
     http_session = credentials.authorize(http)
     
-    service = build('admin', 'directory_v1', http=http_session)
+    service = build('admin', 'directory_v1', http=http_session, cache_discovery=False)
         
     # Call the Admin SDK Directory API
     print('Getting the users in the domain')
