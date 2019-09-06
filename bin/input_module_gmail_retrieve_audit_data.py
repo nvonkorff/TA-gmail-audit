@@ -166,8 +166,24 @@ def GetMessageBody(message):
                     return mime_msg.get_payload()
     except errors.HttpError, error:
             log_to_hec('An error occurred: %s' % error)
-            
-            
+
+
+def mark_as_read_batch(message_ids, user_id, GMAIL):
+
+    result = None
+    n = 0
+    while result is None:
+        try:
+            body = {'ids': message_ids, 'removeLabelIds': ['UNREAD']}
+            GMAIL.users().messages().batchModify(userId=user_id, body=body).execute()
+            n = 0
+            result = "Success"
+            # log_to_hec("Marked message as read:" + user_id + " message_id=" + m_id)
+        except Exception as err:
+            time.sleep((2 ** n))
+            log_to_hec("Error: Could not mark_as_read_batch for user=" + user_id + " - " + str(err) + ". Retrying after " + str(2 ** n) + " seconds.")
+            n += 1
+
 def mark_as_read(message_ids, user_id, GMAIL):
 
     for m_id in message_ids:
@@ -381,8 +397,12 @@ def process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_do
             msg_date = datetime.now()
 
 
-        get_date_obj = dateutil.parser.parse(str(msg_date))
-        eventtime = int(time.mktime(get_date_obj.timetuple()))
+        try:
+            get_date_obj = dateutil.parser.parse(str(msg_date))
+            eventtime = int(time.mktime(get_date_obj.timetuple()))
+        except Exception, e:
+            log_to_hec('Error: "msg_date" is invalid: {0}'.format(msg_date))
+            msg_date = datetime.now()
 
         # eventtime = time.time()
         sourcetype = "gmail:audit:headers"
@@ -390,7 +410,8 @@ def process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_do
         send_to_splunk(splunk_host, auth_token, headers, sourcetype, eventtime)
 
     # Mark the messages as read
-    mark_as_read(message_ids, user_id, GMAIL)
+    # mark_as_read(message_ids, user_id, GMAIL)
+    mark_as_read_batch(message_ids, user_id, GMAIL)
     return
 
 def validate_input(helper, definition):
@@ -405,7 +426,7 @@ def collect_events(helper, ew):
     opt_hostname = helper.get_arg('hostname')
     opt_batch_size = helper.get_arg('batch_size')
     opt_local_domains = helper.get_arg('local_domains')
-    
+
     local_domains = [x.strip() for x in opt_local_domains.split(',')]
 
     local_domains = [x.encode('UTF8') for x in local_domains]
@@ -475,7 +496,7 @@ def run(session_key, domain, splunk_host, auth_token, batch_size, local_domains)
     log_to_hec("Starting: " + script)
 
     access_token, expires_in, GMAIL = refresh_auth_token(domain, _APP_NAME, session_key)
-    
+
     user_id =  'me'
 
     result = None
@@ -498,7 +519,7 @@ def run(session_key, domain, splunk_host, auth_token, batch_size, local_domains)
         # total_unread_count = unread_msgs['messagesUnread']
 
     messages = []
-    
+
     processed_message_count = 0
 
     if 'messages' in unread_msgs:
@@ -548,7 +569,7 @@ def run(session_key, domain, splunk_host, auth_token, batch_size, local_domains)
             message_ids.append(m_id)
 
         process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains)
-        
+
         processed_message_count += len(msg_list)
 
         log_msg = ("Processed=" + str(processed_message_count))
@@ -559,5 +580,4 @@ def run(session_key, domain, splunk_host, auth_token, batch_size, local_domains)
     label_info = GMAIL.users().labels().get(userId='me', id='UNREAD').execute()
     log_to_hec(label_info['id'] + '=' + str(label_info['messagesUnread']))
     log_to_hec("Total messages processed: " +  str(processed_message_count))
-    log_to_hec("Finished: " + script)        
-
+    log_to_hec("Finished: " + script)
