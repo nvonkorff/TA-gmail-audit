@@ -27,7 +27,7 @@ _SYS_EXIT_FAILURE_FIND_API = 5
 _SYS_EXIT_OAUTH_FAILURE = 4
 _SYS_EXIT_FAILED_CONFIG = 3
 
-_APP_NAME = 'TA-gmail-audit'    
+_APP_NAME = 'TA-gmail-audit'
 
 # Necessary
 _CRED = None
@@ -54,8 +54,8 @@ def send_to_splunk(splunk_host, auth_token, payload, sourcetype, eventtime):
 
    splunk_session = requests.Session()
    try:
-      
-      
+
+
       hostname = socket.gethostname()
       post_data = {
          "host": hostname
@@ -137,7 +137,7 @@ def collect_events(helper, ew):
     return
 
 def run(session_key, domain, splunk_host, auth_token):
-    
+
     utils = Utilities(app_name=_APP_NAME, session_key=session_key)
 
     log.info("action=getting_credentials domain={}".format(domain))
@@ -172,9 +172,9 @@ def run(session_key, domain, splunk_host, auth_token):
 
     credentials = oauth2client.client.OAuth2Credentials.from_json(json.dumps(google_oauth_credentials))
     http_session = credentials.authorize(http)
-    
+
     service = build('admin', 'directory_v1', http=http_session, cache_discovery=False)
-        
+
     # Call the Admin SDK Directory API
     print('Getting the users in the domain')
     results = service.users().list(customer='my_customer',
@@ -189,8 +189,33 @@ def run(session_key, domain, splunk_host, auth_token):
             print(u'{0} ({1})'.format(user['primaryEmail'], user['name']['fullName']))
             eventtime = time.time()
             sourcetype = "gsuite:directory:user"
-            send_to_splunk(splunk_host, auth_token, user, sourcetype, eventtime)                        
+            send_to_splunk(splunk_host, auth_token, user, sourcetype, eventtime)
+
+    while 'nextPageToken' in results:
+        page_token = results['nextPageToken']
+
+        result = None
+        n = 0
+
+        while result is None:
+            try:
+                results = service.users().list(customer='my_customer', orderBy='email', pageToken=page_token).execute()
+                users = results.get('users', [])
+
+                if not users:
+                    print('No users in the domain.')
+                else:
+                    print('Users:')
+                    for user in users:
+                        print(u'{0} ({1})'.format(user['primaryEmail'], user['name']['fullName']))
+                        eventtime = time.time()
+                        sourcetype = "gsuite:directory:user"
+                        send_to_splunk(splunk_host, auth_token, user, sourcetype, eventtime)
+                n = 0
+                result = "Success"
+            except Exception as err:
+                time.sleep((2 ** n))
+                log_to_hec("Error: Could not get directory list: " + " - " + str(err) + ". Retrying after " + str(2 ** n) + " seconds.")
+                n += 1
 
     return
-
-

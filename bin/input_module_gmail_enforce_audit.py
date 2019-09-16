@@ -299,9 +299,6 @@ def run(session_key, domain, splunk_host, auth_token, audit_recipient):
         with ThreadPoolExecutor(max_workers=max_threads) as executor:
             for user in ulist:
 
-                # if user['primaryEmail'] != "ashlee.connolly@qantasloyalty.com":
-                #    continue
-
                 if expires_in <= 60:
                    print("Refreshing auth token")
                    access_token, expires_in, service = refresh_auth_token()
