@@ -165,7 +165,8 @@ def run(session_key, domain, splunk_host, auth_token):
         except Exception, e:
             log.warn("action=load_proxy status=failed message=No_Proxy_Information stanza=gapps_proxy")
 
-    log.info("proxy_info={0}".format(proxy_info.__dict__))
+    if proxy_info not None:
+        log.info("proxy_info={0}".format(proxy_info.__dict__))
 
     # Build HTTP session using OAuth creds
     http = httplib2.Http(proxy_info=proxy_info)
