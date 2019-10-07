@@ -129,10 +129,15 @@ def log_to_hec(log_msg):
     payload = { "log": log_msg }
     send_to_splunk(splunk_host, auth_token, payload, sourcetype, eventtime)
 
-def enable_audit(AuditUser, AuditUser_domain, AuditRecipient, AuditRecipient_domain, gd_client, access_token):
+def enable_audit(AuditUser, AuditUser_domain, AuditRecipient, AuditRecipient_domain, gd_client, access_token, expires_in):
 
     log_to_hec("AuditUser_domain = " + AuditUser_domain)
     log_to_hec("AuditRecipient_domain = " + AuditRecipient_domain)
+
+    if expires_in <= 60:
+       print("Refreshing auth token")
+       access_token, expires_in, service = refresh_auth_token()
+       print("Auth token expires within: " + str(expires_in) + " seconds.")
 
     if AuditUser_domain != AuditRecipient_domain:
         log_to_hec(AuditUser_domain + " is a different domain to audit recipient domain: " + AuditRecipient_domain + " - switching gd_client settings")
@@ -232,7 +237,7 @@ def refresh_auth_token(domain, app_name, session_key):
         except Exception, e:
             log.warn("action=load_proxy status=failed message=No_Proxy_Information stanza=gapps_proxy")
 
-    if proxy_info not None:
+    if proxy_info is not None:
         log.info("proxy_info={0}".format(proxy_info.__dict__))
 
     # Build HTTP session using OAuth creds
@@ -260,7 +265,7 @@ def run(session_key, domain, splunk_host, auth_token, audit_recipient):
     access_token, expires_in, service = refresh_auth_token(domain, _APP_NAME, session_key)
 
     script = sys.argv[0]
-    log_to_hec(str(datetime.now()) + " - Starting: " + script)
+    log_to_hec("Starting: " + script)
 
     max_threads = 10
 
@@ -301,9 +306,9 @@ def run(session_key, domain, splunk_host, auth_token, audit_recipient):
             for user in ulist:
 
                 if expires_in <= 60:
-                   print("Refreshing auth token")
+                   log_to_hec("Refreshing auth token")
                    access_token, expires_in, service = refresh_auth_token()
-                   print("Auth token expires within: " + str(expires_in) + " seconds.")
+                   log_to_hec("Auth token expires within: " + str(expires_in) + " seconds.")
 
                    gd_client = gdata.apps.audit.service.AuditService(domain=AuditRecipient.split('@')[1])
                    gd_client.additional_headers[u'Authorization'] = u'Bearer {0}'.format(access_token)
@@ -312,17 +317,17 @@ def run(session_key, domain, splunk_host, auth_token, audit_recipient):
                     continue
 
                 if user['isMailboxSetup'] == False:
-                    print("Mailbox is not configured. Cannot enable auditing on: " + user['primaryEmail'])
+                    log_to_hec("Mailbox is not configured. Cannot enable auditing on: " + user['primaryEmail'])
                     continue
 
                 AuditUser = user['primaryEmail']
-                print(str(datetime.now()) + " - User:" + user['primaryEmail'] + " " + user['name']['fullName'])
+                log_to_hec("User:" + user['primaryEmail'] + " " + user['name']['fullName'])
 
                 AuditUser_domain = AuditUser.split('@')[1]
 
-                futures = executor.submit(enable_audit, AuditUser, AuditUser_domain, AuditRecipient, AuditRecipient_domain, gd_client, access_token)
+                futures = executor.submit(enable_audit, AuditUser, AuditUser_domain, AuditRecipient, AuditRecipient_domain, gd_client, access_token, expires_in)
 
     script = sys.argv[0]
-    log_to_hec(str(datetime.now()) + " - Finished: " + script)
+    log_to_hec("Finished: " + script)
 
     return
