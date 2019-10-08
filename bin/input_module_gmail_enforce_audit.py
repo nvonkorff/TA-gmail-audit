@@ -139,6 +139,9 @@ def enable_audit(AuditUser, AuditUser_domain, AuditRecipient, AuditRecipient_dom
        access_token, expires_in, service = refresh_auth_token()
        print("Auth token expires within: " + str(expires_in) + " seconds.")
 
+       gd_client = gdata.apps.audit.service.AuditService(domain=AuditRecipient.split('@')[1])
+       gd_client.additional_headers[u'Authorization'] = u'Bearer {0}'.format(access_token)
+
     if AuditUser_domain != AuditRecipient_domain:
         log_to_hec(AuditUser_domain + " is a different domain to audit recipient domain: " + AuditRecipient_domain + " - switching gd_client settings")
         gd_client = gdata.apps.audit.service.AuditService(domain=AuditUser.split('@')[1])
