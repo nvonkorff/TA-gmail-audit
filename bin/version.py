@@ -1,1 +1,1 @@
-__version__='TA-gmail-audit.1.0.4'
+__version__='TA-gmail-audit.1.0.5'

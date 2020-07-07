@@ -5,6 +5,8 @@ The Gmail Audit TA for Splunk allows a Splunk Enterprise administrator to interf
 * Enable Gmail auditing for users in the G Suite Directory and configure audit events to be sent to an audit recipient inbox
 * Gather audit events from the inbox of the audit recipient user
 
+WARNING: Due to the way the Gmail audit process works, i.e. audit events are sent to an Gmail inbox of a user in the same domain, there are hard-limits to the number of emails that can be received by that user. If you have a large number of users in your domain(s) and they are all sending audit events to this inbox each time a user sends or receives an email, the audit user inbox gets swamped and is not able to receive email until the suspension is lifted. Gmail receive limits are detailed here: [https://support.google.com/a/answer/1366776?hl=en](https://support.google.com/a/answer/1366776?hl=en)
+
 # Scripts and binaries
 
 This App provides the following scripts:
@@ -14,6 +16,7 @@ This App provides the following scripts:
 | `gmail_authorize.py`                         | This Python custom endpoint allows the authorization of the App to G Suite For Splunk from the web UI.  |
 | `input_module_gsuite_directory_user_list.py` | Gather a listing of users from the G Suite Directory and load them into Splunk.                         |
 | `input_module_gmail_enforce_audit.py`        | Enable Gmail audit for any users in the directory that do not currently have auditing enabled.          |
+| `input_module_gmail_disable_audit.py`        | Disable Gmail audit for any users in the directory that have auditing enabled. This is not part of the add-on UI yet. If you need to use this, overwrite the input_module_gmail_enforce_audit.py audit with this script and let it run to disable auditing.          |
 | `input_module_gmail_retrieve_audit_data.py`  | Retrieve audit events from the inbox of the recipient user, load into Splunk and mark messages as read. |
 | `Utilities.py`                               | Allows utility interactions with Splunk Endpoints                                                       |
 
@@ -62,7 +65,7 @@ The app provides three input templates. Each requires an HTTP Event Collector to
 * Enter an HTTP Event Collector token to receive the events
 * Enter the hostname to which to send events (in most cases this should be localhost, where the HEC token is configured)
 
-*Caveat:*
+*Caveat*
 There seems to be a hard 1000 request per day limit on the Gmail Audit API. I tried to get this increased, but did not have any luck.
 The request to check if auditing is enabled counts as 1 request, as does the call to set auditing if it is not enabled, which means you can check and enable auditing on only 500 users per day.
 The first thing this script does is read the G Suite Directory and get a list of all users in the domain. If there are more than 500 users returned, the script will randomly delete half the users in the list (think Thanos snapping his fingers). This ensures that the script does not run into API limits and over time, all users will evenutally have auditing enabled.
@@ -85,7 +88,7 @@ If anyone knows how to get that limit increased, please let me know and I will g
 
 If you see any errors like this, it is likely that there is another add-on installed in your environment that has a httplib2 module included in its directory structure. 
 
-`2019-07-25 03:56:09,304 log_level=ERROR pid=89865 tid=MainThread file="gmail_authorize.py" function="handle_GET" line_number="112" version="TA-gmail-audit.1.0.4" {'errors': [{'msg': 'setproxy() takes at most 7 arguments (8 given)', 'exception_type': 'TypeError', 'line': 104, 'exception_arguments': 'setproxy() takes at most 7 arguments (8 given)', 'filename': 'gmail_authorize.py'}], 'log_level': 'ERROR'}`
+`2019-07-25 03:56:09,304 log_level=ERROR pid=89865 tid=MainThread file="gmail_authorize.py" function="handle_GET" line_number="112" version="TA-gmail-audit.1.0.5" {'errors': [{'msg': 'setproxy() takes at most 7 arguments (8 given)', 'exception_type': 'TypeError', 'line': 104, 'exception_arguments': 'setproxy() takes at most 7 arguments (8 given)', 'filename': 'gmail_authorize.py'}], 'log_level': 'ERROR'}`
 
 Any submodules included in any apps installed/enabled are visible to Splunk Python, so if you say "include httplib2" in your module, you have no guarantee that the module included in your app folder is going to be used. I think it simply uses the first one it finds.
 
