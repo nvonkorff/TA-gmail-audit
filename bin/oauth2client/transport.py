@@ -16,8 +16,10 @@ import logging
 
 import httplib2
 import six
-from oauth2client import _helpers
 from six.moves import http_client
+
+from oauth2client import _helpers
+
 
 _LOGGER = logging.getLogger(__name__)
 # Properties present in file-like streams / buffers.

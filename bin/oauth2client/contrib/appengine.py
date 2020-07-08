@@ -24,13 +24,14 @@ import os
 import pickle
 import threading
 
-import oauth2client
-import webapp2 as webapp
 from google.appengine.api import app_identity
 from google.appengine.api import memcache
 from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.ext.webapp.util import login_required
+import webapp2 as webapp
+
+import oauth2client
 from oauth2client import _helpers
 from oauth2client import client
 from oauth2client import clientsecrets
@@ -42,6 +43,7 @@ try:
     from oauth2client.contrib import _appengine_ndb
 except ImportError:  # pragma: NO COVER
     _appengine_ndb = None
+
 
 logger = logging.getLogger(__name__)
 
@@ -706,7 +708,6 @@ class OAuth2Decorator(object):
             finally:
                 self.credentials = None
             return resp
-
         return setup_oauth
 
     def has_credentials(self):

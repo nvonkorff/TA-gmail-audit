@@ -26,7 +26,6 @@ import sys
 if sys.hexversion >= 0x02070000:  # pragma: NO COVER
     from django.apps import AppConfig
 
-
     class GoogleOAuth2HelperConfig(AppConfig):
         """ App Config for Django Helper"""
         name = 'oauth2client.django_util'

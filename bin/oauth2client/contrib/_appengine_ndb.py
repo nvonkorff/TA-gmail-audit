@@ -22,7 +22,9 @@ other App Engine libraries are present.
 import logging
 
 from google.appengine.ext import ndb
+
 from oauth2client import client
+
 
 NDB_KEY = ndb.Key
 """Key constant used by :mod:`oauth2client.contrib.appengine`."""

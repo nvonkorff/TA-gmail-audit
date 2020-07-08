@@ -20,9 +20,11 @@ Utilities for making it easier to use OAuth 2.0 on Google Compute Engine.
 import logging
 import warnings
 
+from six.moves import http_client
+
 from oauth2client import client
 from oauth2client.contrib import _metadata
-from six.moves import http_client
+
 
 logger = logging.getLogger(__name__)
 

@@ -25,6 +25,7 @@ import warnings
 import six
 from six.moves import urllib
 
+
 logger = logging.getLogger(__name__)
 
 POSITIONAL_WARNING = 'WARNING'
@@ -121,16 +122,15 @@ def positional(max_positional_args):
                     plural_s = 's'
                 message = ('{function}() takes at most {args_max} positional '
                            'argument{plural} ({args_given} given)'.format(
-                    function=wrapped.__name__,
-                    args_max=max_positional_args,
-                    args_given=len(args),
-                    plural=plural_s))
+                               function=wrapped.__name__,
+                               args_max=max_positional_args,
+                               args_given=len(args),
+                               plural=plural_s))
                 if positional_parameters_enforcement == POSITIONAL_EXCEPTION:
                     raise TypeError(message)
                 elif positional_parameters_enforcement == POSITIONAL_WARNING:
                     logger.warning(message)
             return wrapped(*args, **kwargs)
-
         return positional_wrapper
 
     if isinstance(max_positional_args, six.integer_types):

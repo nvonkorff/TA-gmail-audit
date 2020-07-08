@@ -162,11 +162,11 @@ available outside of a request context, you will need to implement your own
 :class:`oauth2client.Storage`.
 """
 
+from functools import wraps
 import hashlib
 import json
 import os
 import pickle
-from functools import wraps
 
 try:
     from flask import Blueprint
@@ -176,6 +176,7 @@ try:
     from flask import request
     from flask import session
     from flask import url_for
+    import markupsafe
 except ImportError:  # pragma: NO COVER
     raise ImportError('The flask utilities require flask 0.9 or newer.')
 
@@ -185,6 +186,7 @@ from oauth2client import client
 from oauth2client import clientsecrets
 from oauth2client import transport
 from oauth2client.contrib import dictionary_storage
+
 
 _DEFAULT_SCOPES = ('email',)
 _CREDENTIALS_KEY = 'google_oauth2_credentials'
@@ -387,6 +389,7 @@ class UserOAuth2(object):
         if 'error' in request.args:
             reason = request.args.get(
                 'error_description', request.args.get('error', ''))
+            reason = markupsafe.escape(reason)
             return ('Authorization failed: {0}'.format(reason),
                     httplib.BAD_REQUEST)
 
@@ -444,7 +447,7 @@ class UserOAuth2(object):
             return False
         # Is the access token expired? If so, do we have an refresh token?
         elif (self.credentials.access_token_expired and
-                  not self.credentials.refresh_token):
+                not self.credentials.refresh_token):
             return False
         else:
             return True

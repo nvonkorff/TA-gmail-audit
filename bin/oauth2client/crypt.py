@@ -22,6 +22,7 @@ import time
 from oauth2client import _helpers
 from oauth2client import _pure_python_crypt
 
+
 RsaSigner = _pure_python_crypt.RsaSigner
 RsaVerifier = _pure_python_crypt.RsaVerifier
 
@@ -42,7 +43,6 @@ def _bad_pkcs12_key_as_pem(*args, **kwargs):
 
 try:
     from oauth2client import _openssl_crypt
-
     OpenSSLSigner = _openssl_crypt.OpenSSLSigner
     OpenSSLVerifier = _openssl_crypt.OpenSSLVerifier
     pkcs12_key_as_pem = _openssl_crypt.pkcs12_key_as_pem
@@ -53,12 +53,12 @@ except ImportError:  # pragma: NO COVER
 
 try:
     from oauth2client import _pycrypto_crypt
-
     PyCryptoSigner = _pycrypto_crypt.PyCryptoSigner
     PyCryptoVerifier = _pycrypto_crypt.PyCryptoVerifier
 except ImportError:  # pragma: NO COVER
     PyCryptoVerifier = None
     PyCryptoSigner = None
+
 
 if OpenSSLSigner:
     Signer = OpenSSLSigner

@@ -25,12 +25,14 @@ import logging
 import socket
 import sys
 
-from oauth2client import _helpers
-from oauth2client import client
 from six.moves import BaseHTTPServer
 from six.moves import http_client
 from six.moves import input
 from six.moves import urllib
+
+from oauth2client import _helpers
+from oauth2client import client
+
 
 __all__ = ['argparser', 'run_flow', 'message_if_missing']
 
@@ -89,6 +91,7 @@ def _CreateArgumentParser():
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
         help='Set the logging level of detail.')
     return parser
+
 
 # argparser is an ArgumentParser that contains command-line options expected
 # by tools.run(). Pass it in as part of the 'parents' argument to your own

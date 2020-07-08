@@ -15,7 +15,7 @@
       }
     ],
     "releaseDate": null,
-    "description": "Add-on to:- Query the GSuite Directory for all users- Enable auditing of eligible users from the directory listing to send audit emails to a compliance inbox- Retrieve email headers from compliance inbox and ingest them into Splunk",
+    "description": "This app provides three main functions for organisations using Google GSuite and Gmail:- Enable auditing on Gmail inboxes of users in the G Suite Directory and configure email audit events to go the specified audit recipient inbox- Retrieve audited emails (headers only) from the audit recipient inbox- Retrieve the G Suite Directory listing of users and their attributes",
     "classification": {
       "intendedAudience": null,
       "categories": [],

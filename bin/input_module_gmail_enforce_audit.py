@@ -237,7 +237,7 @@ def refresh_auth_token(domain, app_name, session_key):
             proxy_info = httplib2.ProxyInfo(sptype, pc["host"], int(pc["port"]),
                                             proxy_user=pc["authentication"]["username"],
                                             proxy_pass=pc["authentication"]["password"])
-        except Exception, e:
+        except Exception as e:
             log.warn("action=load_proxy status=failed message=No_Proxy_Information stanza=gapps_proxy")
 
     if proxy_info is not None:

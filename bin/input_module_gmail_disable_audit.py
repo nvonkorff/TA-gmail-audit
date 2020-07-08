@@ -125,7 +125,7 @@ def send_to_splunk(splunk_host, auth_token, payload, sourcetype, eventtime):
 def log_to_hec(log_msg):
     # print("Got: " + log_msg)
     eventtime = time.time()
-    sourcetype = "gmail:enforce:audit:ta:output"
+    sourcetype = "gmail:disable:audit:ta:output"
     payload = { "log": log_msg }
     send_to_splunk(splunk_host, auth_token, payload, sourcetype, eventtime)
 
@@ -233,7 +233,7 @@ def refresh_auth_token(domain, app_name, session_key):
             proxy_info = httplib2.ProxyInfo(sptype, pc["host"], int(pc["port"]),
                                             proxy_user=pc["authentication"]["username"],
                                             proxy_pass=pc["authentication"]["password"])
-        except Exception, e:
+        except Exception as e:
             log.warn("action=load_proxy status=failed message=No_Proxy_Information stanza=gapps_proxy")
 
     if proxy_info is not None:

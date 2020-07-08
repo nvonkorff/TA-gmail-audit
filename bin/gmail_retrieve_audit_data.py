@@ -33,7 +33,7 @@ class ModInputgmail_retrieve_audit_data(modinput_wrapper.base_modinput.BaseModIn
     def get_scheme(self):
         """overloaded splunklib modularinput method"""
         scheme = super(ModInputgmail_retrieve_audit_data, self).get_scheme()
-        scheme.title = ("GMail Retrieve Audit Data")
+        scheme.title = ("Gmail Retrieve Audit")
         scheme.description = ("Go to the add-on\'s configuration UI and configure modular inputs under the Inputs menu.")
         scheme.use_external_validation = True
         scheme.streaming_mode_xml = True

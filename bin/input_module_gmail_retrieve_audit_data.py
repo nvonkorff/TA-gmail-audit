@@ -1,4 +1,3 @@
-import StringIO
 import argparse
 import base64
 import datetime
@@ -164,7 +163,7 @@ def GetMessageBody(message):
                     return base64.urlsafe_b64decode(mime_msg.get_payload().encode('ASCII'))
                 else:
                     return mime_msg.get_payload()
-    except errors.HttpError, error:
+    except errors.HttpError as error:
             log_to_hec('An error occurred: %s' % error)
 
 
@@ -400,7 +399,7 @@ def process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_do
         try:
             get_date_obj = dateutil.parser.parse(str(msg_date))
             eventtime = int(time.mktime(get_date_obj.timetuple()))
-        except Exception, e:
+        except Exception as e:
             log_to_hec('Error: "msg_date" is invalid: {0}'.format(msg_date))
             msg_date = datetime.now()
 
@@ -468,7 +467,7 @@ def refresh_auth_token(domain, app_name, session_key):
             proxy_info = httplib2.ProxyInfo(sptype, pc["host"], int(pc["port"]),
                                             proxy_user=pc["authentication"]["username"],
                                             proxy_pass=pc["authentication"]["password"])
-        except Exception, e:
+        except Exception as e:
             log.warn("action=load_proxy status=failed message=No_Proxy_Information stanza=gapps_proxy")
 
     if proxy_info is not None:

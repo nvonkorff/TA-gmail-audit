@@ -20,6 +20,7 @@ A Storage for Credentials that uses the keyring module.
 import threading
 
 import keyring
+
 from oauth2client import client
 
 

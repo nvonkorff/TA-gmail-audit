@@ -21,6 +21,7 @@ import time
 
 from oauth2client import _helpers
 
+
 # Delimiter character
 DELIMITER = b':'
 

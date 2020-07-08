@@ -25,11 +25,12 @@ exists. If it doesn't, the view will still render, but helper methods will be
 attached to start the oauth2 flow.
 """
 
-import django.conf
 from django import shortcuts
-from oauth2client.contrib import django_util
+import django.conf
 from six import wraps
 from six.moves.urllib import parse
+
+from oauth2client.contrib import django_util
 
 
 def oauth_required(decorated_function=None, scopes=None, **decorator_kwargs):
@@ -66,12 +67,11 @@ def oauth_required(decorated_function=None, scopes=None, **decorator_kwargs):
         credentials are missing the required scopes. Otherwise,
         the decorated view.
     """
-
     def curry_wrapper(wrapped_function):
         @wraps(wrapped_function)
         def required_wrapper(request, *args, **kwargs):
             if not (django_util.oauth2_settings.storage_model is None or
-                        request.user.is_authenticated()):
+                    request.user.is_authenticated()):
                 redirect_str = '{0}?next={1}'.format(
                     django.conf.settings.LOGIN_URL,
                     parse.quote(request.path))
@@ -127,7 +127,6 @@ def oauth_enabled(decorated_function=None, scopes=None, **decorator_kwargs):
     Returns:
          The decorated view function.
     """
-
     def curry_wrapper(wrapped_function):
         @wraps(wrapped_function)
         def enabled_wrapper(request, *args, **kwargs):

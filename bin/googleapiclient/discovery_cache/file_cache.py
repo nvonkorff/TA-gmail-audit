@@ -27,6 +27,7 @@ import json
 import logging
 import os
 import tempfile
+import threading
 
 try:
     from oauth2client.contrib.locked_file import LockedFile
@@ -35,16 +36,17 @@ except ImportError:
     try:
         from oauth2client.locked_file import LockedFile
     except ImportError:
-        # oauth2client > 4.0.0
+        # oauth2client > 4.0.0 or google-auth
         raise ImportError(
-            'file_cache is unavailable when using oauth2client >= 4.0.0')
+            "file_cache is unavailable when using oauth2client >= 4.0.0 or google-auth"
+        )
 
 from . import base
 from ..discovery_cache import DISCOVERY_DOC_MAX_AGE
 
 LOGGER = logging.getLogger(__name__)
 
-FILENAME = 'google-api-python-client-discovery-doc.cache'
+FILENAME = "google-api-python-client-discovery-doc.cache"
 EPOCH = datetime.datetime.utcfromtimestamp(0)
 
 
@@ -55,8 +57,9 @@ def _to_timestamp(date):
         # The following is the equivalent of total_seconds() in Python2.6.
         # See also: https://docs.python.org/2/library/datetime.html
         delta = date - EPOCH
-        return ((delta.microseconds + (delta.seconds + delta.days * 24 * 3600)
-                 * 10 ** 6) / 10 ** 6)
+        return (
+            delta.microseconds + (delta.seconds + delta.days * 24 * 3600) * 10 ** 6
+        ) / 10 ** 6
 
 
 def _read_or_initialize_cache(f):
@@ -79,25 +82,25 @@ class Cache(base.Cache):
     def __init__(self, max_age):
         """Constructor.
 
-        Args:
-          max_age: Cache expiration in seconds.
-        """
+      Args:
+        max_age: Cache expiration in seconds.
+      """
         self._max_age = max_age
         self._file = os.path.join(tempfile.gettempdir(), FILENAME)
-        f = LockedFile(self._file, 'a+', 'r')
+        f = LockedFile(self._file, "a+", "r")
         try:
             f.open_and_lock()
             if f.is_locked():
                 _read_or_initialize_cache(f)
-                # If we can not obtain the lock, other process or thread must
-                # have initialized the file.
+            # If we can not obtain the lock, other process or thread must
+            # have initialized the file.
         except Exception as e:
             LOGGER.warning(e, exc_info=True)
         finally:
             f.unlock_and_close()
 
     def get(self, url):
-        f = LockedFile(self._file, 'r+', 'r')
+        f = LockedFile(self._file, "r+", "r")
         try:
             f.open_and_lock()
             if f.is_locked():
@@ -108,7 +111,7 @@ class Cache(base.Cache):
                         return content
                 return None
             else:
-                LOGGER.debug('Could not obtain a lock for the cache file.')
+                LOGGER.debug("Could not obtain a lock for the cache file.")
                 return None
         except Exception as e:
             LOGGER.warning(e, exc_info=True)
@@ -116,7 +119,7 @@ class Cache(base.Cache):
             f.unlock_and_close()
 
     def set(self, url, content):
-        f = LockedFile(self._file, 'r+', 'r')
+        f = LockedFile(self._file, "r+", "r")
         try:
             f.open_and_lock()
             if f.is_locked():
@@ -124,13 +127,16 @@ class Cache(base.Cache):
                 cache[url] = (content, _to_timestamp(datetime.datetime.now()))
                 # Remove stale cache.
                 for k, (_, timestamp) in list(cache.items()):
-                    if _to_timestamp(datetime.datetime.now()) >= timestamp + self._max_age:
+                    if (
+                        _to_timestamp(datetime.datetime.now())
+                        >= timestamp + self._max_age
+                    ):
                         del cache[k]
                 f.file_handle().truncate(0)
                 f.file_handle().seek(0)
                 json.dump(cache, f.file_handle())
             else:
-                LOGGER.debug('Could not obtain a lock for the cache file.')
+                LOGGER.debug("Could not obtain a lock for the cache file.")
         except Exception as e:
             LOGGER.warning(e, exc_info=True)
         finally:

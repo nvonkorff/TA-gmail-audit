@@ -26,6 +26,7 @@ from oauth2client import client
 from oauth2client import crypt
 from oauth2client import transport
 
+
 _PASSWORD_DEFAULT = 'notasecret'
 _PKCS12_KEY = '_private_key_pkcs12'
 _PKCS12_ERROR = r"""
@@ -612,12 +613,12 @@ class _JWTAccessCredentials(ServiceAccountCredentials):
             if self.access_token is None or self.access_token_expired:
                 self.refresh(None)
             return client.AccessTokenInfo(
-                access_token=self.access_token, expires_in=self._expires_in())
+              access_token=self.access_token, expires_in=self._expires_in())
         else:
             # Create a 1 time token
             token, unused_expiry = self._create_token(additional_claims)
             return client.AccessTokenInfo(
-                access_token=token, expires_in=self._MAX_TOKEN_LIFETIME_SECS)
+              access_token=token, expires_in=self._MAX_TOKEN_LIFETIME_SECS)
 
     def revoke(self, http):
         """Cannot revoke JWTAccessCredentials tokens."""

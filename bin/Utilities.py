@@ -1,6 +1,6 @@
 """
 Written by Kyle Smith for Aplura, LLC
-Copyright (C) 2016-2017 Aplura, ,LLC
+Copyright (C) 2016-2019 Aplura, ,LLC
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -16,18 +16,29 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 """
+from __future__ import absolute_import
+import sys
+import os.path
+if sys.version_info >= (3, 0):
+    base_location = sys.path[0].split(os.path.sep)
+    base_location.pop(-1)
+    base_location.append(os.path.sep.join(["lib", "python3.7", "site-packages"]))
+    base_location.append(os.path.sep.join(["bin", "lib", "python3.7", "site-packages"]))
+    sys.path.pop(0)
+    sys.path.insert(0, os.path.sep.join(base_location))
+
 import csv
 import json
 import logging
 import os
 import sys
+import re
 from logging import handlers
-
+import splunk
 import splunk.entity as entity
 import splunk.rest as rest
 from splunk.appserver.mrsparkle.lib.util import get_apps_dir
 from splunk.appserver.mrsparkle.lib.util import make_splunkhome_path
-
 import version
 
 
@@ -39,18 +50,28 @@ class KennyLoggins:
 
     def get_logger(self, app_name=None, file_name="kenny_loggins", log_level=logging.INFO):
         log_location = make_splunkhome_path(['var', 'log', 'splunk', app_name])
+        # logging.setLoggerClass(SplunkLogger)
+        LOGGING_DEFAULT_CONFIG_FILE = make_splunkhome_path(['etc', 'apps', app_name, 'default', 'log.cfg'])
+        LOGGING_LOCAL_CONFIG_FILE = make_splunkhome_path(['etc', 'apps', app_name, 'local', 'log.cfg'])
+        LOGGING_STANZA_NAME = app_name
         _log = logging.getLogger("{}".format(file_name))
         if not os.path.isdir(log_location):
             os.mkdir(log_location)
         output_file_name = os.path.join(log_location, "{}.log".format(file_name))
         _log.propogate = False
-        _log.setLevel(log_level)
+        _log.setLevel(logging.INFO)
         f_handle = handlers.RotatingFileHandler(output_file_name, maxBytes=25000000, backupCount=5)
         formatter = logging.Formatter(
             '%(asctime)s log_level=%(levelname)s pid=%(process)d tid=%(threadName)s file="%(filename)s" function="%(funcName)s" line_number="%(lineno)d" version="{}" %(message)s'.format(version.__version__))
         f_handle.setFormatter(formatter)
         if not len(_log.handlers):
             _log.addHandler(f_handle)
+        try:
+            splunk.setupSplunkLogger(_log, LOGGING_DEFAULT_CONFIG_FILE, LOGGING_LOCAL_CONFIG_FILE, LOGGING_STANZA_NAME)
+        except Exception as e:
+            _log.setLevel(logging.DEBUG)
+            _log.error("Failed to setup Logger {3}:{4}: {1}:{0}, setting log_level to {2}".format(e, type(e), log_level, app_name, file_name))
+            _log.setLevel(log_level)
         return _log
 
 
@@ -114,6 +135,74 @@ class Utilities:
         else:
             return rest.simpleRequest(uri, jsonargs=json.dumps(args), sessionKey=self._session_key)
 
+    def _make_delete_request(self, uri, usejson=True):
+        return rest.simpleRequest(uri, sessionKey=self._session_key, method="DELETE")
+
+    def check_collection_exists(self, collection_name, do_create=False, **kwargs):
+        t_name = re.sub('[^0-9a-zA-Z]+', '_', collection_name)
+        c_name = "{}_col".format(t_name)
+        uri = self._build_endpoint_uri(["storage", "collections", "config", c_name])
+        try:
+            sr, sc = self._make_get_request(uri, args={"output_mode": "json"})
+            entry = json.loads(sc.decode("utf-8"))
+            self._log.info("action=check_collection_exists do_create={} sc={}".format(do_create, type(entry)))
+            self.check_transform_exists(t_name, do_create=do_create, collection=c_name, external_type="kvstore")
+            if "fields_list" in kwargs:
+                fl = kwargs["fields_list"]
+                fl.append("_key")
+                fl_s = ", ".join(sorted(list(set(fl))))
+                self._log.info("action=update_fields_list fl={}".format(fl_s))
+                self.update_transforms_property(t_name, "fields_list", fl_s)
+                self.update_transforms_property(t_name, "collection", c_name)
+            return entry
+        except Exception as e:
+            self._log.warn("action=check_collection_exists name={} do_create={} {}".format(c_name, do_create, e))
+            ret_obj = {}
+            if do_create:
+                args = {"name": c_name, "output_mode": "json"}
+                self._log.info("action=create_collection args={}".format(args))
+                sr, sc = self._make_post_request(self._build_endpoint_uri(["storage", "collections", "config"]), args=args)
+                entry = json.loads(sc.decode("utf-8"))
+                self._log.info(
+                    "action=check_collection_exists do_create={} response={}".format(do_create, json.dumps(entry)))
+                self.check_transform_exists(t_name, do_create=do_create, collection=c_name, external_type="kvstore")
+                ret_obj = entry
+                if "fields_list" in kwargs:
+                    fl = kwargs["fields_list"]
+                    fl.append("_key")
+                    fl_s = ", ".join(sorted(fl))
+                    self._log.info("action=update_fields_list fl={}".format(fl_s))
+                    self.update_transforms_property(t_name, "fields_list", fl_s)
+                    self.update_transforms_property(t_name, "collection", c_name)
+                return ret_obj
+            else:
+                return None
+        return None
+
+    def update_transforms_property(self, stanza, prop, value):
+        uri = self._build_endpoint_uri(["configs", "conf-transforms", stanza])
+        self._make_post_request(uri, args={prop: value})
+
+    def check_transform_exists(self, transform_name, do_create=False, **kwargs):
+        t_name = re.sub('[^0-9a-zA-Z]+', '_', transform_name)
+        uri = self._build_endpoint_uri(["configs", "conf-transforms", t_name])
+        try:
+            sr, sc = self._make_get_request(uri, args={"output_mode": "json"})
+            entry = json.loads(sc.decode("utf-8"))
+            self._log.info("action=check_transform_exists do_create={} sc={}".format(do_create, json.dumps(entry)))
+            return entry
+        except Exception as e:
+            self._log.warn("action=check_transform_exists name={} do_create={} {}".format(t_name, do_create, e))
+            if do_create:
+                kwargs["name"] = t_name
+                kwargs["output_mode"] = "json"
+                self._log.info("action=create_transform args={}".format(kwargs))
+                sr, sc = self._make_post_request(self._build_endpoint_uri(["configs", "conf-transforms"]), args=kwargs)
+                self._log.info("action=check_transform_exists do_create={} ".format(do_create))
+                return json.loads(sc.decode("utf-8"))
+            else:
+                return None
+
     def get_proxy_configuration(self, proxy_name):
         """
         Get's the proxy configuration stanza specified from proxy.conf.
@@ -121,7 +210,7 @@ class Utilities:
         :return:
         """
         try:
-            uri = self._build_endpoint_uri(['admin', 'conf-proxy', proxy_name])
+            uri = self._build_endpoint_uri(['configs', 'conf-proxy', proxy_name])
             server_response, server_content = self._make_get_request(uri, args={"output_mode": "json"})
             proxy_configuration = json.loads(server_content)["entry"][0]["content"]
             proxy_config = {"host": proxy_configuration.get("proxy_host"),
@@ -137,11 +226,11 @@ class Utilities:
                     "password": proxy_configuration.get("proxy_pass")
                 }
             return json.loads(json.dumps(proxy_config))
-        except Exception, e:
+        except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             jsondump = {"message": str((e)),
-                        "exception_type": "%s" % type(e).__name__,
+                        "exception_type": "%s" % type(e),
                         "exception_arguments": "%s" % e,
                         "filename": fname,
                         "line": exc_tb.tb_lineno
@@ -154,11 +243,11 @@ class Utilities:
             server_response, server_content = self._make_get_request(uri, args={"count": kwargs.get("count", 10000),
                                                                                 "output_mode": "json"})
             return json.loads(server_content)["results"]
-        except Exception, e:
+        except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             myJson = "message=\"{}\" exception_type=\"{}\" exception_arguments=\"{}\" filename=\"{}\" line=\"{}\" ".format(
-                str(e), type(e).__name__, e, fname, exc_tb.tb_lineno)
+                str(e), type(e), e, fname, exc_tb.tb_lineno)
             self._log.error(myJson)
             raise Exception(myJson)
 
@@ -173,11 +262,11 @@ class Utilities:
                                                                         "utilities_call")),
                 args=json.dumps(kwargs.get("event", {})))
             return json.loads(server_content)
-        except Exception, e:
+        except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             myJson = "message=\"{}\" exception_type=\"{}\" exception_arguments=\"{}\" filename=\"{}\" line=\"{}\" ".format(
-                str(e), type(e).__name__, e, fname, exc_tb.tb_lineno)
+                str(e), type(e), e, fname, exc_tb.tb_lineno)
             self._log.error(myJson)
             raise Exception(myJson)
 
@@ -192,6 +281,26 @@ class Utilities:
             args = {"password": cpass}
         return self._make_post_request(uri, args)
 
+    def get_configuration(self, filename, stanza):
+        try:
+            rc, o = self._make_get_request(self._build_endpoint_uri(["configs", "conf-{}".format(filename), stanza]),
+                                          args={"output_mode": "json"})
+            self._log.debug("action=get_configuration typeobj={} rc={} typerc={} compare={}".format(type(o), rc.status, type(rc.status), (rc.status == 200)))
+            if rc.status == 200:
+                self._log.debug("action=get_configuration o={}".format(o))
+                obj = json.loads(o)
+                content = obj["entry"][0]["content"]
+                self._log.debug("action=get_configuration content={}".format(content))
+                return {k: v for k, v in content.iteritems() if not k.startswith('eai:') and k != "disabled"}
+            else:
+                return {}
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            self._log.error('message="{}" exception_type="{}" '
+                            'exception_arguments="{}" filename="{}" exception_line="{}" '.format(str(e), type(e), e, fname, exc_tb.tb_lineno))
+            return {}
+
     def get_credential(self, realm, cuser):
         """
         :param realm:
@@ -199,32 +308,38 @@ class Utilities:
         :return:
         """
         try:
-            self._log.info("realm={} cuser={} app={} sessionKey={}".format(realm, cuser, self._app_name, self._session_key))
-            entities = entity.getEntities(['admin', 'passwords'], namespace=self._app_name, owner='nobody',
+            self._log.info("realm={} cuser={} app={}".format(realm, cuser, self._app_name))
+            entities = entity.getEntities(['storage', 'passwords'], namespace=self._app_name, owner='nobody',
                                           sessionKey=self._session_key, search="{0}:{1}".format(realm, cuser))
-            for i in entities:
-                self._log.info("Entity={}".format(i))
-
             key = "{0}:{1}:".format(realm, cuser)
             if key not in entities:
                 return None
             else:
                 import urllib
                 try:
-                    return urllib.unquote(entities[key]["clear_password"])
-                except KeyError, e:
+                    clear_pass = entities[key]["clear_password"]
+                    if clear_pass is None:
+                        self._log.error(
+                            "action=get_credential msg=could_not_decrypt_clear_password realm={} cuser={} ".format(
+                                realm, cuser))
+                        return None
+                    self._log.debug(
+                        "action=get_credential msg=found_clear_password realm={} cuser={} ".format(realm,
+                                                                                                   cuser))
+                    return clear_pass
+                except KeyError as e:
                     return None
-        except Exception, e:
+        except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             jsondump = {"message": str((e)),
-                        "exception_type": "%s" % type(e).__name__,
+                        "exception_type": "%s" % type(e),
                         "exception_arguments": "%s" % e,
                         "filename": fname,
                         "line": exc_tb.tb_lineno
                         }
             self._log.error('message="{}" exception_type="{}" '
-                            'exception_arguments="{}" filename="{}" line="{}" '.format(str(e), type(e).__name__, e, fname, exc_tb.tb_lineno))
+                            'exception_arguments="{}" filename="{}" line="{}" '.format(str(e), type(e), e, fname, exc_tb.tb_lineno))
             raise Exception(json.dumps(jsondump))
 
     def get_kvstore_data(self, kvstore, search=None):
@@ -232,30 +347,39 @@ class Utilities:
             uri = self._build_endpoint_uri(['storage', 'collections', 'data', kvstore])
             server_response, server_content = self._make_get_request(uri, args={"query": search})
             return json.loads(server_content)
-        except Exception, e:
+        except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             myJson = "message=\"{}\" exception_type=\"{}\" exception_arguments=\"{}\" filename=\"{}\" line=\"{}\" ".format(
-                str(e), type(e).__name__, e, fname, exc_tb.tb_lineno)
+                str(e), type(e), e, fname, exc_tb.tb_lineno)
             self._log.error(myJson)
             raise Exception(myJson)
+
+    def is_kvstore_ready(self):
+        return self.get_kvstore_status() == "ready"
+
+    def get_kvstore_status(self):
+        uri = self._build_endpoint_uri(["kvstore", "status"])
+        headers, data = self._make_get_request(self._build_endpoint_uri(["kvstore", "status"]),
+                                               args={"output_mode": "json"})
+        return json.loads(data)["entry"][0]["content"]["current"]["status"]
 
     def kvstore_batch_save(self, kvstore, data):
         try:
             uri = self._build_endpoint_uri(["storage", "collections", "data", kvstore, "batch_save"])
             # self._make_post_request(uri, args=data, usejson=True)
-            chunks = [data[i:i + 500] for i in xrange(0, len(data), 500)]
+            chunks = [data[i:i + 500] for i in range(0, len(data), 500)]
             returns = []
             for chunk in chunks:
                 # We split this into chunks of 500, which is 1/2 the default limit.conf setting for document size
-                self._debug("doing a chunk of length {}".format(len(chunk)))
+                self._debug("ksvtore={} action=batch_save chunk_length={}".format(kvstore, len(chunk)))
                 returns.extend(self._make_post_request(uri, args=chunk, usejson=True))
             return returns
-        except Exception, e:
+        except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             myJson = "message=\"{}\" exception_type=\"{}\" exception_arguments=\"{}\" filename=\"{}\" line=\"{}\" ".format(
-                str(e), type(e).__name__, e, fname, exc_tb.tb_lineno)
+                str(e), type(e), e, fname, exc_tb.tb_lineno)
             self._log.error(myJson)
             raise Exception(myJson)
 
@@ -264,13 +388,39 @@ class Utilities:
             uri = self._build_endpoint_uri(["storage", "collections", "data", kvstore])
             self._log.info("setting kvstore data to have fields: {}".format(json.dumps({"keys": data.keys()})))
             return self._make_post_request(uri, args=data, usejson=True)
-        except Exception, e:
+        except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             myJson = "message=\"{}\" exception_type=\"{}\" exception_arguments=\"{}\" filename=\"{}\" line=\"{}\" ".format(
-                str(e), type(e).__name__, e, fname, exc_tb.tb_lineno)
+                str(e), type(e), e, fname, exc_tb.tb_lineno)
             self._log.error(myJson)
             raise Exception(myJson)
+
+    def delete_kvstore_all_items(self, kvstore):
+        try:
+            uri = self._build_endpoint_uri(["storage", "collections", "data", kvstore])
+            self._log.info("action=deleting_kvstore_item kvstore={}".format(kvstore))
+            return self._make_delete_request(uri, usejson=True)
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            myJson = "message=\"{}\" exception_type=\"{}\" exception_arguments=\"{}\" filename=\"{}\" line=\"{}\" ".format(
+                str(e), type(e), e, fname, exc_tb.tb_lineno)
+            self._log.error(myJson)
+            return {"status": "failed", "action": "delete_kvstore_item", "kvstore": kvstore}
+
+    def delete_kvstore_item(self, kvstore, key):
+        try:
+            uri = self._build_endpoint_uri(["storage", "collections", "data", kvstore, key])
+            self._log.info("action=deleting_kvstore_item kvstore={} key={}".format(kvstore, key))
+            return self._make_delete_request(uri, usejson=True)
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            myJson = "message=\"{}\" exception_type=\"{}\" exception_arguments=\"{}\" filename=\"{}\" line=\"{}\" ".format(
+                str(e), type(e), e, fname, exc_tb.tb_lineno)
+            self._log.warn(myJson)
+            return {"status": "failed", "action": "delete_kvstore_item", "key": key, "kvstore": kvstore}
 
     def update_kvstore_data(self, kvstore, key, data):
         uri = self._build_endpoint_uri(["storage", "collections", "data", kvstore, key])
@@ -331,6 +481,16 @@ class Utilities:
     def del_kvstore_proxy_configuration(self, key):
         return True
 
+    def is_cloud(self):
+        try:
+            uri = self._build_endpoint_uri(["server", "info", "server_info"])
+            sr, sc = self._make_get_request(uri, args={"output_mode": "json"})
+            instance_type = sc[0]['content']['instance_type']
+            self._log.info("checking_cloud={}".format(json.loads(sc.decode("utf-8"))))
+            return instance_type == "cloud"
+        except:
+            return False
+
     def read_lookup(self, lookup_filename, primary_key=None):
         try:
             lookups_dir = os.path.join(get_apps_dir(), self._app_name, "lookups")
@@ -345,11 +505,11 @@ class Utilities:
                         lookup_dict["primary_keys"].append(row[primary_key])
                     lookup_dict["lookup"].append(row)
             return lookup_dict
-        except Exception, e:
+        except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             jsondump = {"message": str((e)),
-                        "exception_type": "%s" % type(e).__name__,
+                        "exception_type": "%s" % type(e),
                         "exception_arguments": "%s" % e,
                         "filename": fname,
                         "line": exc_tb.tb_lineno
@@ -381,11 +541,11 @@ class Utilities:
                 for row in data:
                     writer.writerow(row)
             return data
-        except Exception, e:
+        except Exception as e:
             exc_type, exc_obj, exc_tb = sys.exc_info()
             fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
             jsondump = {"message": str((e)),
-                        "exception_type": "%s" % type(e).__name__,
+                        "exception_type": "%s" % type(e),
                         "exception_arguments": "%s" % e,
                         "filename": fname,
                         "line": exc_tb.tb_lineno
@@ -401,3 +561,4 @@ class Utilities:
                 if row[primary_key] not in existing_data["primary_keys"]:
                     existing_data["lookup"].append(row)
         return self.write_lookup(lookup_filename, existing_data["lookup"])
+

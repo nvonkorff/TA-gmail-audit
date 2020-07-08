@@ -23,17 +23,19 @@ import hashlib
 import json
 import os
 
-import jsonpickle
 from django import http
 from django import shortcuts
 from django.conf import settings
 from django.core import urlresolvers
 from django.shortcuts import redirect
+from django.utils import html
+import jsonpickle
+from six.moves.urllib import parse
+
 from oauth2client import client
 from oauth2client.contrib import django_util
 from oauth2client.contrib.django_util import get_storage
 from oauth2client.contrib.django_util import signals
-from six.moves.urllib import parse
 
 _CSRF_KEY = 'google_oauth2_csrf_token'
 _FLOW_KEY = 'google_oauth2_flow_{0}'
@@ -108,6 +110,7 @@ def oauth2_callback(request):
     if 'error' in request.GET:
         reason = request.GET.get(
             'error_description', request.GET.get('error', ''))
+        reason = html.escape(reason)
         return http.HttpResponseBadRequest(
             'Authorization failed {0}'.format(reason))
 

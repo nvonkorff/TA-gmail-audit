@@ -18,21 +18,18 @@
 """CodesearchService extends GDataService to streamline Google Codesearch 
 operations"""
 
+# __author__ = 'Benoit Chesneau'
 
-__author__ = 'Benoit Chesneau'
-
-
-import atom
-import gdata.service
 import gdata.codesearch
+import gdata.service
 
 
-class CodesearchService(gdata.service.GDataService): 
+class CodesearchService(gdata.service.GDataService):
     """Client extension for Google codesearch service"""
     ssl = True
 
     def __init__(self, email=None, password=None, source=None,
-                 server='www.google.com',  additional_headers=None, **kwargs):
+                 server='www.google.com', additional_headers=None, **kwargs):
         """Creates a client for the Google codesearch service.
 
         Args:
@@ -80,7 +77,7 @@ class CodesearchService(gdata.service.GDataService):
             A CodesearchFeed objects representing the feed returned by the server
         """
 
-        query=gdata.codesearch.service.CodesearchQuery(text_query=text_query)
+        query = gdata.codesearch.service.CodesearchQuery(text_query=text_query)
         feed = self.Query(query.ToUri())
         return feed
 
@@ -88,8 +85,8 @@ class CodesearchService(gdata.service.GDataService):
 class CodesearchQuery(gdata.service.Query):
     """Object used to construct the query to the Google Codesearch feed. here only as a shorcut"""
 
-    def __init__(self, feed='/codesearch/feeds/search', text_query=None, 
-            params=None, categories=None):
+    def __init__(self, feed='/codesearch/feeds/search', text_query=None,
+                 params=None, categories=None):
         """Constructor for Codesearch Query.
 
         Args:

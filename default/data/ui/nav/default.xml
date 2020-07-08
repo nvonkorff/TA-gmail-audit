@@ -1,7 +1,5 @@
-<nav search_view="search" color="#3C444D">
+<nav search_view="search" color="#455058">
 <view name="inputs" default="true" />
-<collection label="Configuration">
-<view name="App_Config" label="Application Configuration"/>
-</collection>
+<view name="configuration"/>
 <view name="search" label="Search"/>
 </nav>

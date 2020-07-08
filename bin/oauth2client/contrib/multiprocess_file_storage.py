@@ -82,9 +82,11 @@ import os
 import threading
 
 import fasteners
+from six import iteritems
+
 from oauth2client import _helpers
 from oauth2client import client
-from six import iteritems
+
 
 #: The maximum amount of time, in seconds, to wait when acquire the
 #: interprocess lock before falling back to read-only mode.
@@ -316,7 +318,6 @@ class MultiprocessFileStorage(client.Storage):
           credentials. For example, you may use the user's ID as the key or
           a combination of the client ID and user ID.
     """
-
     def __init__(self, filename, key):
         self._key = key
         self._backend = _get_backend(filename)

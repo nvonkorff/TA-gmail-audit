@@ -231,11 +231,12 @@ import importlib
 import django.conf
 from django.core import exceptions
 from django.core import urlresolvers
+from six.moves.urllib import parse
+
 from oauth2client import clientsecrets
 from oauth2client import transport
 from oauth2client.contrib import dictionary_storage
 from oauth2client.contrib.django_util import storage
-from six.moves.urllib import parse
 
 GOOGLE_OAUTH2_DEFAULT_SCOPES = ('email',)
 GOOGLE_OAUTH2_REQUEST_ATTRIBUTE = 'oauth'

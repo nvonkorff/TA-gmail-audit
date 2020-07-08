@@ -87,8 +87,8 @@ def _validate_clientsecrets(clientsecrets_dict):
     except (ValueError, AttributeError):
         raise InvalidClientSecretsError(
             _INVALID_FILE_FORMAT_MSG + ' '
-                                       'Expected a JSON object with a single property for a "web" or '
-                                       '"installed" application')
+            'Expected a JSON object with a single property for a "web" or '
+            '"installed" application')
 
     if client_type not in VALID_CLIENT:
         raise InvalidClientSecretsError(
