@@ -1,0 +1,9 @@
+Version 1.3.2
+-------------
+
+- Improvement
+
+    - [DESK-562] [Splunk Answers] "Organization Unit (OU) Needed"
+        - added new reports: access_transparency, groups_enterprise, user_accounts
+        - added new sourcetype: ``gapps:admin:directory:users`` This includes "orgUnitPath". THIS MAY EXPOSE PII!
+    - [GSUITE-4] GMail Logs via BigQuery

@@ -1,0 +1,146 @@
+Key concepts for |long_name|
+----------------------------
+
+* You must have enabled the G Suite APIs at https://console.developers.google.com
+* You must have configured a credential for use with this App at https://console.developers.google.com.
+* You must AUTHORIZE this app to make requests into G Suite APIs.
+* Scopes Defined are here: https://developers.google.com/identity/protocols/googlescopes
+
+Configure |long_name| for use with G Suite Admin Reporting.
+-----------------------------------------------------------
+
+Requires: ``Admin SDK API``, and ``Google Drive API``
+Optional: ``Google Analytics Reporting API``
+Each API endpoint has individual APIs that need to be enabled within https://console.developers.google.com.
+
+#. `report:[all, gcp, chat, meet, jamboard, access_transparency, groups_enterprise, user_accounts, groups, mobile, admin, calendar, drive, login, token, rules]`
+    #. These input service names require the *Admin SDK API* enabled.
+    #. Additionally, the "drive" report requires the *Google Drive API* enabled.
+    #. These inputs generally do not require "Extra Configuration" options in the Modular Input. An empty `{}` is still needed where advanced features are not.
+    #. These inputs should be adjusted per Google guidelines for the different activities.
+    #. By default, the Modular Input will only pull the previous 24 hours of data to prevent memory overflows.
+#. `analytics:[metadata, report]`
+    #. These input service names require the "*Analytics Reporting API v4*" and "*Analytics API*" APIs enabled.
+    #. These inputs do require "Extra Configuration". These inputs should not be enabled lightly, and require a little bit of prior research and planning.
+    #. IF YOU DON'T KNOW WHAT THIS IS, DO NOT ENABLE IT
+    #. THIS IS A DARK FEATURE.
+#. `usage:[customer, user, chrome]`
+    #. These input service names require the same as the report services.
+    #. These inputs can have extra configuration, namely `historical_days` to do the initial data ingestion.
+        #. When configuring the modular input, use the "Extra Configuration" option of `{"historical_days": 180}`
+    #. IMPORTANT: BE CAREFUL WITH USER REPORTING. If you ingest 365 days of data (back fill the information), you will end up with `365 * # of users` events to pull and could cause a Splunk/System failure.
+    #. If you see a `404 Error` in the logs relating to the usage reports, THESE ARE NORMAL.
+    #. The Customer Usage *should* include classrooms usage by default.
+
+Configure |long_name| for use with Google Spreadsheets
+------------------------------------------------------
+
+Requires: ``Google Sheets API``
+
+#. When setting up the modular input, make sure you grab the Spreadsheet ID from the URL of the spreadsheet you need. Auto-discovery of available spreadsheets is not available (but an ER is in for it).
+
+Spreadsheet Destinations
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+#. Index
+    #. Takes the information from the sheet and indexes it to the specified index. This is useful to get lookups from a Heavy Forwarder to a Search head.
+    #. Use the provided Dashboard to re-assemble via saved scheduled search.
+#. KVStore
+    #. Takes the information from the sheet and places it into a KVStore collection.
+    #. It will create the needed collections and transforms if needed.
+    #. Order of the COLUMNS ``is NOT`` kept, and the KVStore will be sorted via ASCII sort based on the column name.
+#. Ordered KVStore
+    #. Takes the information from the sheet and places it into a KVStore collection.
+    #. It will create the needed collections and transforms if needed.
+    #. Order of the COLUMNS ``IS`` kept, the column names are stored in ``ROW 0``
+#. CSV Lookup
+    #. Takes the information from the sheet and places it into a CSV based lookup.
+    #. It will create the needed transforms if needed.
+    #. Order of the COLUMNS ``is NOT`` kept, and the CSV lookup will be sorted via ASCII sort based on the column name.
+#. Ordered CSV Lookup
+    #. Takes the information from the sheet and places it into a CSV based lookup.
+    #. It will create the needed transforms if needed.
+    #. Order of the COLUMNS ``IS`` kept, the column names are stored in ``ROW 0``.
+
+
+
+Configure |long_name| for use with Google BigQuery
+--------------------------------------------------
+
+Requires: ```BigQuery API``
+
+NOTE: This is EXPERIMENTAL. Enjoy breaking the input. This section to be updated when working correctly.
+NOTE: DOES NOT CURRENTLY WORK WITH PROXIES
+NOTE: To consume *all* tables in a dataset, use the table name "*all*"
+
+Requirements
+~~~~~~~~~~~~
+
+1. Service Account JSON File from GCP. (https://console.developers.google.com/iam-admin/serviceaccounts)
+2. Create a new Splunk credential with Realm: `gsuite_bigquery` and username is `<your_domain>` (your domain as configured in the input)
+3. The password for that credential is the *ENTIRE* *ON ONE LINE* JSON file from GCP for the service account.
+
+Configure |long_name| for use with G Suite Admin Reporting
+-----------------------------------------------------------
+
+Requires: ``G Suite Alert Center API``
+Note: ``EXPERIMENTAL`` (scope not valid)
+#. `alerts:[all, takeout, gmail, identity, operations, state, mobile]`
+    #. These inputs generally do not require "Extra Configuration" options in the Modular Input. An empty `{}` is still needed where advanced features are not.
+    #. By default, the Modular Input will only pull the previous 24 hours of data to prevent memory overflows.
+    #. Uses the ``https://www.googleapis.com/auth/apps.alerts`` scope.
+    #. View more information at https://developers.google.com/admin-sdk/alertcenter/reference/alert-types .
+
+Notes
+-----
+
+`IMPORTANT`: You must Authorize the APIS with the SAME USER that allowed access to the APIs in the developer console (for GSuite customers - GCP see below).
+
+Overview of authorization procedures are found here: https://developers.google.com/identity/protocols/OAuth2ServiceAccount#overview.
+
+`GCP Users`: It has been tested to use an Credential generated in the GCP console (same credential type as outlined on the OAuth App Config page). You can use an authorized admin to "Approve" the OAuth Scopes. It is `unknown` what happens when the approving Admin user account is disabled. 
+
+Modular Input
+-------------
+
+**NOTE:** You will need to configure a new modular input for each domain
+
+#. Follow the steps on the `Application Configuration` dashboard to configure the modular input.
+
+**NOTE:** After testing in a much bigger environment, we've been able to set these recommendations for intervals. You will need 4 modular input definitions.
+
+#. calendar, token, mobile, groups, login, saml, Chrome OS Devices
+   #. These are done at an cron interval of `15 */4 * * *`
+#. drive
+   #. Drive is done at a seconds interval of `600` - `1200` depending on organization size, and traffic flow of drive operations.
+#. Usage - User, Customer
+   #. These are done at a seconds interval of `86400`
+#. admin, rules, chat, gplus
+   #. These are done at a seconds interval of `600`
+
+Indexes
+-------
+
+By default all events will be written to the "main" index. You should change the index in the configuration files to match your specific index.
+
+Configure Proxy Support
+-----------------------
+
+This App Supports proxy configuration. Configure the proxy first in the `Application Configuration` dashboard, and then choose it during the modular input configuration. The proxy `name` MUST BE `gapps_proxy` for the authorization to work correctly.
+
+Troubleshoot |long_name|
+------------------------
+
+#. Check the Monitoring Console (`>=v6.5`) for errors
+#. Visit the `Application Health` dashboard
+#. Search for `eventtype=googleapps_error`
+
+CIM
+---
+
+As of v1.4.0 of this app, we should support version `4.15` of the CIM.
+
+EXPERIMENTAL
+------------
+
+There are portions of this app that are experimental, or you might see "odd" code. This is for some up coming features, might work, might not.

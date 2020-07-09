@@ -1,0 +1,11 @@
+Version |version| of |long_name| is compatible with:
+
+.. list-table:: Compatability
+   :widths: 12 12
+   :header-rows: 0
+
+   * - Splunk Enterprise versions
+     - |splunk_versions|
+   * - Platforms
+     - Splunk Enterprise
+

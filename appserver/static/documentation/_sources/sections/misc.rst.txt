@@ -1,0 +1,26 @@
+Lookups
+-------
+
+|long_name| contains the following lookup files:
+
+#. ``gsuite_labels.csv`` : This allows "pretty" labels on select dashboards.
+
+Event Generator
+---------------
+
+|long_name| does not make use of an event generator. This allows the product to display data, when there are no inputs configured.
+
+Acceleration
+------------
+
+#. Summary Indexing: No
+#. Data Model Acceleration: No
+#. Report Acceleration: No
+
+Binary File Declaration
+-----------------------
+
+#. ``bin/google/protobuf/internal/_api_implementation.so`` is apparently a binary file. Required for Google Things.
+#. ``bin/google/protobuf/internal/_message.so`` is apparently a binary file. Required for Google Things.
+
+For these two, please see https://github.com/protocolbuffers/protobuf/tree/3.6.x/python/google/protobuf/internal for source and attribution.

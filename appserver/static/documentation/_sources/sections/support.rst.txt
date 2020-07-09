@@ -1,0 +1,12 @@
+Questions and answers
+---------------------
+
+Access questions and answers specific to |long_name| at https://answers.splunk.com . Be sure to tag your question with the App.
+
+Support
+-------
+
+- Support Email: splunkapps@kyleasmith.info
+- Support Offered: Community Engagement
+
+Support is available via email at splunkapps@kyleasmith.info. You can also find the author on IRC (#splunk on efnet.org) or Slack. Feel free to email or ping, most responses will be within 1-2 business days.

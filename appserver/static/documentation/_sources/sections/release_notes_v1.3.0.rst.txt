@@ -1,0 +1,19 @@
+Version 1.3.0
+-------------
+
+- Bug
+
+    - [GSUITE-8] - IA Builder Multi MI
+    - [GSUITE-10] - Remove Sheets after Successful Creation of Input
+    - [GSUITE-11] - Error Messages on Data Not Found - Usage reports
+
+- New Feature
+
+    - [GSUITE-6] - Google Drive Import Export for Sheets and Lookups
+    - [EXPERIMENTAL] - BigQuery Integration for GMAIL Logs
+
+- Improvement
+
+    - [GSUITE-5] - Update Auth to be Front End Only
+    - [GSUITE-7] - Refactor GA for Scale
+    - [GSUITE-9] - Waiting Indicator for Sheet Names

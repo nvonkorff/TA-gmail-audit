@@ -1,0 +1,80 @@
+Welcome to G Suite for Splunk App's documentation!
+==================================================
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+.. include:: variables_compiled.rst
+
+Overview
+========
+
+About |long_name|
+-----------------
+
+.. list-table:: About |long_name|
+   :widths: 15 10
+   :header-rows: 0
+
+   * - Author
+     - Kyle Smith
+   * - App Version
+     - |version|
+   * - App Build
+     - |build|
+   * - Vendor Products
+     - G Suite utilizing OAuth2
+   * - Has index-time operations
+     - true, the included TA add-on must be placed on the indexers
+   * - Creates an index
+     - false
+   * - Implements summarization
+     - Currently, the app does not generate summaries
+
+
+|long_name| allows a Splunk Enterprise administrator to interface with G Suite, consuming the usage and administrative logs provided by Google. The limitations on collection times are specified: https://support.google.com/a/answer/7061566 .
+
+Scripts and binaries
+--------------------
+
+.. include:: ./sections/scripts.rst
+
+Release notes
+=============
+
+.. include:: ./sections/release_notes_v1.4.2.rst
+.. include:: ./sections/release_notes_v1.4.1.rst
+.. include:: ./sections/release_notes_v1.4.0.rst
+
+About this release
+------------------
+
+.. include:: ./sections/about.rst
+
+Known Issues
+------------
+
+.. include:: ./sections/known_issues.rst
+
+Support and resources
+=====================
+
+.. include:: ./sections/support.rst
+
+Installation and Configuration
+==============================
+
+.. include:: ./sections/installation.rst
+
+User Guide
+==========
+
+.. include:: ./sections/user_guide.rst
+
+.. include:: ./sections/misc.rst
+
+Third Party Notices
+===================
+
+.. include:: ./sections/third_party.rst

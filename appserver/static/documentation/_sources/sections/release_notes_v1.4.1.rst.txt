@@ -1,0 +1,13 @@
+Version 1.4.1
+-------------
+
+- Test and QA
+    - [GSUITE-23] - App inspect Failures
+
+- Bug
+    - [GSUITE-19] - Interval check doesn't adjust for default.
+    - [GSUITE-20] - BigQuery not caching last row
+
+- Improvement
+    - [GSUITE-21] - Fix Proxy Code
+    - [GSUITE-24] - Create New Dashboards 

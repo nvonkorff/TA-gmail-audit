@@ -1,0 +1,37 @@
+Software requirements
+---------------------
+
+Splunk Enterprise system requirements
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Because this App runs on Splunk Enterprise, all of the [Splunk Enterprise system requirements](https://docs.splunk.com/Documentation/Splunk/latest/Installation/Systemrequirements) apply.
+
+Download
+--------
+
+Download |long_name| at |splunkbase_url|.
+
+Installation steps
+------------------
+
+NOTE: Where referenced, the |ia_name| and |ta_name| versions of this App are located on Splunkbase.
+
+Deploy to single server instance
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Deploy as you would any App, and restart Splunk.
+1. NOTE: Only the App (or IA for no dashboards) is required. Install only 1 of the G Suite add ons or app.
+1. Configure.
+
+Deploy to Splunk Cloud
+~~~~~~~~~~~~~~~~~~~~~~
+
+1. Have your Splunk Cloud Support handle this installation. Do NOT install the IA on the same system as the App.
+1. You may consider using an on-premise Heavy Forwarder to install |ia_name|, and send the logs to Splunk Cloud.
+
+Deploy to a Distributed Environment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. For each Search Head in the environment, deploy a non-configured copy of the App. DO NOT SEND TA or IA to a Search Head Cluster (SHC).
+1. For each indexer in the environment, deploy a copy of the |ta_name| Add-On that is located as mentioned above.
+1. For a single "Data Collection Node" OR "Heavy Forwarder" (a full instance of Splunk is required), install |ia_name| and configure through the GUI.

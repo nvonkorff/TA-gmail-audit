@@ -1,0 +1,123 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>&lt;no title&gt; &#8212; G Suite For Splunk 1.4.2 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <p>Version 1.4.2 of <a href="#id1"><span class="problematic" id="id2">|long_name|</span></a> has the following known issues:</p>
+<ul>
+<li><p>According to stackoverflow, there are indications that the Google Apps Admin API has an unspecified delay introduced into the events that are collected. This is most likely due to how Google collects the events and the global nature of the events. To mitigate this issue, the <a href="#id3"><span class="problematic" id="id4">|long_name|</span></a> Modular Input has a built-in delay in the consumption of events. If you run the modular input at 30 minutes, there will be a 30 minute delay of events. If you run at 1 hour, there will be a 1 hour delay in events.</p></li>
+<li><p>References</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="https://support.google.com/a/answer/7061566">https://support.google.com/a/answer/7061566</a></p></li>
+<li><p><a class="reference external" href="http://stackoverflow.com/questions/27389354/minimal-delay-when-listing-activities-using-the-reports-api">http://stackoverflow.com/questions/27389354/minimal-delay-when-listing-activities-using-the-reports-api</a></p></li>
+<li><p><a class="reference external" href="http://stackoverflow.com/questions/30850838/what-is-the-delay-between-a-event-happens-and-it-is-reflected-in-admin-reports-a">http://stackoverflow.com/questions/30850838/what-is-the-delay-between-a-event-happens-and-it-is-reflected-in-admin-reports-a</a></p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>These are the currently requested scopes:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="https://www.googleapis.com/auth/admin.reports.audit.readonly">https://www.googleapis.com/auth/admin.reports.audit.readonly</a></p></li>
+<li><p><a class="reference external" href="https://www.googleapis.com/auth/admin.reports.usage.readonly">https://www.googleapis.com/auth/admin.reports.usage.readonly</a></p></li>
+<li><p><a class="reference external" href="https://www.googleapis.com/auth/analytics.readonly">https://www.googleapis.com/auth/analytics.readonly</a></p></li>
+<li><p><a class="reference external" href="https://www.googleapis.com/auth/admin.directory.user.readonly">https://www.googleapis.com/auth/admin.directory.user.readonly</a></p></li>
+<li><p><a class="reference external" href="https://www.googleapis.com/auth/admin.directory.device.chromeos.readonly">https://www.googleapis.com/auth/admin.directory.device.chromeos.readonly</a></p></li>
+<li><p><a class="reference external" href="https://www.googleapis.com/auth/drive.metadata.readonly">https://www.googleapis.com/auth/drive.metadata.readonly</a></p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">G Suite For Splunk</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, alacercogitatus.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.1.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/sections/known_issues.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
