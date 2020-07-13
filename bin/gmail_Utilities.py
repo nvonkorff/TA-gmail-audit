@@ -37,6 +37,7 @@ from logging import handlers
 import splunk
 import splunk.entity as entity
 import splunk.rest as rest
+import splunklib.client as client
 from splunk.appserver.mrsparkle.lib.util import get_apps_dir
 from splunk.appserver.mrsparkle.lib.util import make_splunkhome_path
 import gmail_version
@@ -112,7 +113,7 @@ class Utilities:
         kl = KennyLoggins()
         self._log = kl.get_logger(self._app_name, "utilities", level)
 
-    def __init__(self, log_level=logging.DEBUG, **kwargs):
+    def __init__(self, log_level=logging.INFO, **kwargs):
         """Construct an instance of the Utilities Object"""
         self._session_key = kwargs["session_key"]
         self._app_name = kwargs["app_name"]
@@ -270,16 +271,60 @@ class Utilities:
             self._log.error(myJson)
             raise Exception(myJson)
 
+    def get_creds_splunk_client(self, realm, cuser):
+        """
+        :param realm:
+        :param cuser:
+        :return:
+        """
+        try:
+            self._log.info("realm={} cuser={} app={}".format(realm, cuser, self._app_name))
+            service = client.connect(token=self._session_key)
+            entities = service.storage_passwords
+            key = "{0}:{1}:".format(realm, cuser)
+            if key not in entities:
+                return None
+            else:
+                import urllib
+                try:
+                    clear_pass = entities[key]["clear_password"]
+                    if clear_pass is None:
+                        self._log.error(
+                            "action=get_credential msg=could_not_decrypt_clear_password realm={} cuser={} ".format(
+                                realm, cuser))
+                        return None
+                    self._log.debug(
+                        "action=get_credential msg=found_clear_password realm={} cuser={} ".format(realm,
+                                                                                                   cuser))
+                    return clear_pass
+                except KeyError as e:
+                    return None
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            jsondump = {"message": str((e)),
+                        "exception_type": "%s" % type(e),
+                        "exception_arguments": "%s" % e,
+                        "filename": fname,
+                        "line": exc_tb.tb_lineno
+                        }
+            self._log.error('message="{}" exception_type="{}" '
+                            'exception_arguments="{}" filename="{}" line="{}" '.format(str(e), type(e), e, fname, exc_tb.tb_lineno))
+            raise Exception(json.dumps(jsondump))
+        
     def set_credential(self, crealm, cuser, cpass):
         self._debug("setting creds")
         uri = self._build_endpoint_uri(['storage', 'passwords'])
         args = {"name": cuser, "realm": crealm, "password": cpass}
         # creds = self.get_credential(crealm, cuser)
-        # if creds is not None:
-        #     self._debug("updating creds")
-        #     uri = self._build_endpoint_uri(['storage', 'passwords', "{0}:{1}".format(crealm, cuser)])
-        #     args = {"password": cpass}
-        return self._make_post_request(uri, args)
+        creds = self.get_creds_splunk_client(crealm, cuser)
+        if creds is not None:
+            self._debug("updating creds")
+            uri = self._build_endpoint_uri(['storage', 'passwords', "{0}:{1}".format(crealm, cuser)])
+            args = {"password": cpass}
+        service = client.connect(token=self._session_key)
+        return service.storage_passwords.create(cpass, cuser, crealm)
+        # return self._make_post_request(uri, args)
 
     def get_configuration(self, filename, stanza):
         try:
