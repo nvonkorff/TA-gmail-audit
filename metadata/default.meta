@@ -1,8 +1,28 @@
-
 []
 access = read : [ * ], write : [ admin ]
+export = none
+owner = nobody
+
+[checklist]
 export = system
 
-[views]
-access = read : [ * ], write : [ admin ]
-export = none
+[macros/google_mc_health_check_api]
+export = system
+
+[macros/gapps_mc_health_check_server_not_found]
+export = system
+
+[macros/gapps_mc_health_check_bad_credentials]
+export = system
+
+[macros/gapps_mc_recent]
+export = system
+
+[eventtypes/googleapps_error]
+export = system
+
+[eventtypes/googleapps]
+export = system
+
+[eventtypes/gsuite_internal]
+export = system
