@@ -279,7 +279,7 @@ class Utilities:
         """
         try:
             self._log.info("realm={} cuser={} app={}".format(realm, cuser, self._app_name))
-            service = client.connect(token=self._session_key)
+            service = client.connect(token=self._session_key, app=self._app_name)
             entities = service.storage_passwords
             key = "{0}:{1}:".format(realm, cuser)
             if key not in entities:
@@ -322,7 +322,7 @@ class Utilities:
             self._debug("updating creds")
             uri = self._build_endpoint_uri(['storage', 'passwords', "{0}:{1}".format(crealm, cuser)])
             args = {"password": cpass}
-        service = client.connect(token=self._session_key)
+        service = client.connect(token=self._session_key, app=self._app_name)
         return service.storage_passwords.create(cpass, cuser, crealm)
         # return self._make_post_request(uri, args)
 
