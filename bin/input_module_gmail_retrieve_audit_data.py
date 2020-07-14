@@ -370,21 +370,25 @@ def process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_do
             log_to_hec('Error: "from" address domain regex failed: {0}'.format(from_addr))
             continue
 
-        # log_to_hec('to_domains: {0} from_domain: {1} to_addr: {2} local_domains: {3}'.format(to_domain, from_domain, to_addr, local_domains))
 
 
-        local_domains_string = '|'.join(map(str, local_domains)) 
-
+        local_domains_string = '|'.join(map(lambda x: x.decode('utf-8'), local_domains))
         regex = '^(?!({0})).*'.format(local_domains_string)
+
+        # log_to_hec("regex={}".format(regex))
+
+        map(lambda x: x.decode('utf-8'), local_domains)
+
+        # log_to_hec('to_domains: {0} from_domain: {1} to_addr: {2} local_domains: {3}'.format(to_domain, from_domain, to_addr, local_domains))
 
         r = re.compile(regex, re.IGNORECASE)
         external_domains = list(filter(r.match, to_domain))
 
-        if from_domain in local_domains and len(external_domains) == 0:
+        if from_domain.encode('utf-8') in local_domains and len(external_domains) == 0:
             message_info = "internal"
-        elif from_domain not in local_domains:
+        elif from_domain.encode('utf-8') not in local_domains:
             message_info = "inbound"
-        elif from_domain in local_domains and len(external_domains) > 0:
+        elif from_domain.encode('utf-8') in local_domains and len(external_domains) > 0:
             message_info = "outbound"
 
         headers["external_domains"] = external_domains

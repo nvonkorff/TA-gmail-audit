@@ -140,8 +140,8 @@ def get_audit_config_user(audit_user_name, AuditUser_domain, access_token):
     url = "https://apps-apis.google.com/a/feeds/compliance/audit/mail/monitor/{}/{}".format(AuditUser_domain, audit_user_name)
 
     headers = {"Authorization": "Bearer {}".format(access_token)}
-    log_to_hec("url={}".format(url))
-    log_to_hec("headers={}".format(headers))
+    # log_to_hec("url={}".format(url))
+    # log_to_hec("headers={}".format(headers))
     try:
         r = requests.get(url, headers=headers)
     except requests.exceptions.RequestException:
@@ -178,9 +178,9 @@ def set_audit_config_user(AuditUser_domain, audit_user_name, audit_recipient_nam
     headers = {"Authorization": "Bearer {}".format(access_token)
              , "Content-type": "application/atom+xml"}
 
-    log_to_hec("url={}".format(url))
-    log_to_hec("headers={}".format(headers))
-    log_to_hec("xml={}".format(xml))
+    # log_to_hec("url={}".format(url))
+    # log_to_hec("headers={}".format(headers))
+    # log_to_hec("xml={}".format(xml))
     try:
         r = requests.post(url, headers=headers, data=xml)
     except requests.exceptions.RequestException:
@@ -202,16 +202,6 @@ def enable_audit(AuditUser, AuditUser_domain, AuditRecipient, AuditRecipient_dom
 
     log_to_hec("AuditUser_domain = " + AuditUser_domain)
     log_to_hec("AuditRecipient_domain = " + AuditRecipient_domain)
-
-    if expires_in <= 60:
-        log_to_hec("Refreshing auth token")
-        access_token, expires_in, service = refresh_auth_token()
-        log_to_hec("Auth token expires in {} seconds".format(expires_in))
-
-        gd_client = gdata.apps.audit.service.AuditService(domain=AuditRecipient.split('@')[1])
-        gd_client.additional_headers[u'Authorization'] = u'Bearer {0}'.format(access_token)
-        # auth_headers = {u'Authorization': u'Bearer %s' % access_token}
-        # gd_client.additional_headers = auth_headers
 
     if AuditUser_domain != AuditRecipient_domain:
         log_to_hec(AuditUser_domain + " is a different domain to audit recipient domain: " + AuditRecipient_domain + " - switching gd_client settings")
@@ -327,55 +317,6 @@ def refresh_auth_token(domain, app_name, session_key):
     expires_in = token_info.expires_in
 
     return access_token, expires_in, service
-
-
-def refresh_auth_token_gdata(domain, app_name, session_key):
-
-    utils = Utilities(app_name=app_name, session_key=session_key)
-
-    log.info("action=getting_credentials domain={}".format(domain))
-    goacd = utils.get_creds_splunk_client(app_name, domain)
-    log.info("action=getting_credentials domain={} goacd_type={}".format(domain, type(goacd)))
-    google_oauth_credentials = json.loads(goacd)
-
-    assert type(google_oauth_credentials) is dict
-    if goacd is None:
-        log.error("operation=load_credentials error_message={}".format("No Credentials Found in Store"))
-        sys.exit(_SYS_EXIT_FAILED_GET_OAUTH_CREDENTIALS)
-
-    proxy_config_file = os.path.join(_app_local_directory, "proxy.conf")
-    proxy_info = None
-    h = None
-
-    utils = Utilities(app_name=_APP_NAME, session_key=session_key)
-    if os.path.isfile(proxy_config_file):
-        try:
-            pc = utils.get_proxy_configuration("gapps_proxy")
-            sptype = socks.PROXY_TYPE_HTTP
-            proxy_info = httplib2.ProxyInfo(sptype, pc["host"], int(pc["port"]),
-                                            proxy_user=pc["authentication"]["username"],
-                                            proxy_pass=pc["authentication"]["password"])
-        except Exception as e:
-            log.warn("action=load_proxy status=failed message=No_Proxy_Information stanza=gapps_proxy")
-
-    if proxy_info is not None:
-        log.info("proxy_info={0}".format(proxy_info.__dict__))
-
-    # Build HTTP session using OAuth creds
-    http = httplib2.Http(proxy_info=proxy_info)
-    credentials = oauth2client.client.OAuth2Credentials.from_json(json.dumps(google_oauth_credentials))
-
-    http_session = credentials.authorize(http)
-
-    service = build('admin', 'directory_v1', http=http_session, cache_discovery=False)
-
-    token_info = credentials.get_access_token(http_session)
-
-    access_token = token_info.access_token
-    expires_in = token_info.expires_in
-
-    return access_token, expires_in, service
-
 
 def run(session_key, domain, splunk_host, auth_token, audit_recipient):
 
