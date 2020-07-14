@@ -9,8 +9,8 @@ import socks
 import splunk.appserver.mrsparkle.lib.util as util
 import sys
 import time
-from Utilities import KennyLoggins, Utilities
-from Utilities import Utilities
+from gmail_Utilities import KennyLoggins, Utilities
+from gmail_Utilities import Utilities
 from apiclient import errors
 from apiclient.discovery import build
 from datetime import timedelta, datetime
@@ -141,7 +141,7 @@ def run(session_key, domain, splunk_host, auth_token):
     utils = Utilities(app_name=_APP_NAME, session_key=session_key)
 
     log.info("action=getting_credentials domain={}".format(domain))
-    goacd = utils.get_credential(_APP_NAME, domain)
+    goacd = utils.get_creds_splunk_client(_APP_NAME, domain)
     log.info("action=getting_credentials domain={} goacd_type={}".format(domain, type(goacd)))
     google_oauth_credentials = json.loads(goacd)
 

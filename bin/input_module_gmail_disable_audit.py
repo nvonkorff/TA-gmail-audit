@@ -15,8 +15,8 @@ import splunk.appserver.mrsparkle.lib.util as util
 import sys
 import threading
 import time
-from Utilities import KennyLoggins, Utilities
-from Utilities import Utilities
+from gmail_Utilities import KennyLoggins, Utilities
+from gmail_Utilities import Utilities
 from apiclient import errors
 from apiclient.discovery import build
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -149,7 +149,7 @@ def disable_audit(AuditUser, AuditUser_domain, AuditRecipient, AuditRecipient_do
 
     for n in range(0, 5):
         try:
-            monitors = gd_client.getEmailMonitors( AuditUser.split('@')[0] )
+            monitors = gd_client.getEmailMonitors(user=AuditUser.split('@')[0])
         except Exception as err:
             if err[0]['status'] == 400:
                 log_to_hec(str(datetime.now()) + " - Error: Could not list monitors for " + AuditUser + " - " + str(err))
@@ -212,7 +212,7 @@ def refresh_auth_token(domain, app_name, session_key):
     utils = Utilities(app_name=app_name, session_key=session_key)
 
     log.info("action=getting_credentials domain={}".format(domain))
-    goacd = utils.get_credential(app_name, domain)
+    goacd = utils.get_creds_splunk_client(app_name, domain)
     log.info("action=getting_credentials domain={} goacd_type={}".format(domain, type(goacd)))
     google_oauth_credentials = json.loads(goacd)
 

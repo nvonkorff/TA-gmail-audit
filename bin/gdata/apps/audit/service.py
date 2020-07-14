@@ -23,9 +23,9 @@ class AuditService(gdata.apps.service.PropertyService):
         if domain is None:
             domain = self.domain
         if user is None:
-            return '/a/feeds/compliance/audit/%s/%s' % (setting_id, domain)
+            return '/a/feeds/compliance/audit/{}/{}'.format(setting_id, domain)
         else:
-            return '/a/feeds/compliance/audit/%s/%s/%s' % (setting_id, domain, user)
+            return '/a/feeds/compliance/audit/{}/{}/{}'.format(setting_id, domain, user)
 
     def updatePGPKey(self, pgpkey):
         """Updates Public PGP Key Google uses to encrypt audit data
@@ -69,29 +69,29 @@ class AuditService(gdata.apps.service.PropertyService):
         Returns:
           A dict containing the result of the POST operation."""
 
-        uri = self._serviceUrl('mail/monitor', user=source_user)
-        properties = {'destUserName': destination_user}
+        uri = self._serviceUrl('mail/monitor', user=source_user )
+        properties = {b'destUserName': destination_user }
         if begin_date is not None:
-            properties['beginDate'] = begin_date
-        properties['endDate'] = end_date
+            properties[b'beginDate'] = begin_date
+        properties[b'endDate'] = end_date
         if incoming_headers_only:
-            properties['incomingEmailMonitorLevel'] = 'HEADER_ONLY'
+            properties[b'incomingEmailMonitorLevel'] = 'HEADER_ONLY'
         else:
-            properties['incomingEmailMonitorLevel'] = 'FULL_MESSAGE'
+            properties[b'incomingEmailMonitorLevel'] = 'FULL_MESSAGE'
         if outgoing_headers_only:
-            properties['outgoingEmailMonitorLevel'] = 'HEADER_ONLY'
+            properties[b'outgoingEmailMonitorLevel'] = 'HEADER_ONLY'
         else:
-            properties['outgoingEmailMonitorLevel'] = 'FULL_MESSAGE'
+            properties[b'outgoingEmailMonitorLevel'] = 'FULL_MESSAGE'
         if drafts:
             if drafts_headers_only:
-                properties['draftMonitorLevel'] = 'HEADER_ONLY'
+                properties[b'draftMonitorLevel'] = 'HEADER_ONLY'
             else:
-                properties['draftMonitorLevel'] = 'FULL_MESSAGE'
+                properties[b'draftMonitorLevel'] = 'FULL_MESSAGE'
         if chats:
             if chats_headers_only:
-                properties['chatMonitorLevel'] = 'HEADER_ONLY'
+                properties[b'chatMonitorLevel'] = 'HEADER_ONLY'
             else:
-                properties['chatMonitorLevel'] = 'FULL_MESSAGE'
+                properties[b'chatMonitorLevel'] = 'FULL_MESSAGE'
         return self._PostProperties(uri, properties)
 
     def getEmailMonitors(self, user):

@@ -19,6 +19,9 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 from __future__ import absolute_import
 import sys
 import os.path
+import ast
+import datetime
+
 if sys.version_info >= (3, 0):
     base_location = sys.path[0].split(os.path.sep)
     base_location.pop(-1)
@@ -296,7 +299,12 @@ class Utilities:
                     self._log.debug(
                         "action=get_credential msg=found_clear_password realm={} cuser={} ".format(realm,
                                                                                                    cuser))
-                    return clear_pass
+                    clear_pass = ast.literal_eval(clear_pass)
+                    token_expiry = datetime.datetime.fromtimestamp(clear_pass["expires_at"]).strftime('%Y-%m-%dT%H:%M:%SZ')
+                    clear_pass.update({"token_expiry":token_expiry})
+                    clear_pass.update({"user_agent":None})
+                    clear_pass.update({"invalid":None})
+                    return json.dumps(clear_pass)
                 except KeyError as e:
                     return None
         except Exception as e:

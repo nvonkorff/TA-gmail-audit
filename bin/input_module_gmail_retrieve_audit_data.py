@@ -18,8 +18,8 @@ import splunk.appserver.mrsparkle.lib.util as util
 import string
 import sys
 import time
-from Utilities import KennyLoggins, Utilities
-from Utilities import Utilities
+from gmail_Utilities import KennyLoggins, Utilities
+from gmail_Utilities import Utilities
 from apiclient import discovery
 from apiclient import errors
 from apiclient.discovery import build
@@ -86,7 +86,7 @@ def send_to_splunk(splunk_host, auth_token, payload, sourcetype, eventtime):
       request_url = "https://%s:8088/services/collector" % splunk_host
 
       # Encode data in JSON utf-8 format
-      post_data = json.dumps(post_data).encode('utf8')
+      post_data = json.dumps(post_data).encode('utf-8')
 
       # Encode data in JSON utf-8 format
       # data = json.dumps(post_data)
@@ -150,17 +150,17 @@ def isBase64(sb):
 def GetMessageBody(message):
     try:
             # message = service.users().messages().get(userId=user_id, id=msg_id, format='raw').execute()
-            msg_str = base64.urlsafe_b64decode(message['raw'].encode('ASCII'))
+            msg_str = str(base64.urlsafe_b64decode(message['raw']), 'utf-8')
             mime_msg = email.message_from_string(msg_str)
             messageMainType = mime_msg.get_content_maintype()
             if messageMainType == 'multipart':
                 for part in mime_msg.get_payload():
                         if part.get_content_maintype() == 'text':
-                                return base64.urlsafe_b64decode(part.get_payload().encode('ASCII'))
+                                return str(base64.urlsafe_b64decode(part.get_payload()), 'utf-8')
                 return ""
             elif messageMainType == 'text':
                 if isBase64(mime_msg.get_payload()):
-                    return base64.urlsafe_b64decode(mime_msg.get_payload().encode('ASCII'))
+                    return str(base64.urlsafe_b64decode(mime_msg.get_payload()), 'utf-8')
                 else:
                     return mime_msg.get_payload()
     except errors.HttpError as error:
@@ -251,7 +251,7 @@ def process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_do
         # not multipart - i.e. plain text, no attachments, keeping fingers crossed
         else:
             body = b.get_payload(decode=True)
-        body = body.split('\n')
+        body = body.decode("utf-8").split('\n')
         cleaned_body = ''
         for line in body:
             should_add_line = True
@@ -311,7 +311,7 @@ def process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_do
                 file_data = base64.urlsafe_b64decode(data.encode('UTF-8'))
 
         parser = HeaderParser()
-        msg = email.message_from_string(file_data)
+        msg = email.message_from_string(str(file_data, 'utf-8'))
 
         headers = {}
 
@@ -372,7 +372,10 @@ def process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_do
 
         # log_to_hec('to_domains: {0} from_domain: {1} to_addr: {2} local_domains: {3}'.format(to_domain, from_domain, to_addr, local_domains))
 
-        regex = '^(?!({0})).*'.format("|".join(local_domains))
+
+        local_domains_string = '|'.join(map(str, local_domains)) 
+
+        regex = '^(?!({0})).*'.format(local_domains_string)
 
         r = re.compile(regex, re.IGNORECASE)
         external_domains = list(filter(r.match, to_domain))
@@ -446,7 +449,7 @@ def refresh_auth_token(domain, app_name, session_key):
     utils = Utilities(app_name=app_name, session_key=session_key)
 
     log.info("action=getting_credentials domain={}".format(domain))
-    goacd = utils.get_credential(app_name, domain)
+    goacd = utils.get_creds_splunk_client(app_name, domain)
     log.info("action=getting_credentials domain={} goacd_type={}".format(domain, type(goacd)))
     google_oauth_credentials = json.loads(goacd)
 
@@ -514,9 +517,10 @@ def run(session_key, domain, splunk_host, auth_token, batch_size, local_domains)
 
     label_info = GMAIL.users().labels().get(userId='me', id='UNREAD').execute()
     log_to_hec(label_info['id'] + '=' + str(label_info['messagesUnread']))
+    log_to_hec("UNREAD={}".format(len(unread_msgs)))
 
-    # if 'messagesUnread' in unread_msgs:
-        # total_unread_count = unread_msgs['messagesUnread']
+    if 'messagesUnread' in unread_msgs:
+        total_unread_count = unread_msgs['messagesUnread']
 
     messages = []
 
