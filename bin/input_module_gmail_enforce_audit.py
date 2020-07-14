@@ -212,15 +212,7 @@ def enable_audit(AuditUser, AuditUser_domain, AuditRecipient, AuditRecipient_dom
     audit_recipient_name = AuditRecipient.split('@')[0]
     end_date = '2118-11-21 00:00'
 
-    ### - Remove after testing
-    if audit_user_name != "wallylambic":
-        log_to_hec("Not for you {0} - only wally".format(audit_user_name))
-        return
-    ###
-
-    log_to_hec("Got to step=1")
     try:
-        log_to_hec("Got to step=2")
         # monitors = get_audit_config_user(audit_user_name, AuditUser_domain, access_token)
         monitors = gd_client.getEmailMonitors(user=audit_user_name)
     except Exception as err:
@@ -228,10 +220,8 @@ def enable_audit(AuditUser, AuditUser_domain, AuditRecipient, AuditRecipient_dom
         return
 
     log_to_hec("User={} Monitors={}".format(AuditUser, monitors))
-    log_to_hec("Got to step=3")
     if not monitors or monitors['outgoingEmailMonitorLevel'] == 'HEADER_ONLY':
         try:
-            log_to_hec("Got to step=4")
             monitors = set_audit_config_user(AuditUser_domain, audit_user_name, audit_recipient_name, end_date, access_token)
             # monitors = gd_client.createEmailMonitor( source_user = audit_user_name,
             #                                          destination_user = audit_recipient_name,
@@ -244,7 +234,6 @@ def enable_audit(AuditUser, AuditUser_domain, AuditRecipient, AuditRecipient_dom
         except Exception as err:
             log_to_hec("Error: Could not create monitors for {} - Error={}".format(AuditUser, err))
 
-    log_to_hec("Got to step=5")
     log_to_hec("User={} Monitors={}".format(AuditUser, monitors))
     return
 
