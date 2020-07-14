@@ -212,8 +212,11 @@ def enable_audit(AuditUser, AuditUser_domain, AuditRecipient, AuditRecipient_dom
     audit_recipient_name = AuditRecipient.split('@')[0]
     end_date = '2118-11-21 00:00'
 
+    if audit_user_name != "wallylambic":
+        log_to_hec("Not you {}, only wally".format(audit_user_name))
+        return
+
     try:
-        # monitors = get_audit_config_user(audit_user_name, AuditUser_domain, access_token)
         monitors = gd_client.getEmailMonitors(user=audit_user_name)
     except Exception as err:
         log_to_hec("Error: Could not list monitors for {} - Error={}".format(AuditUser, err))
@@ -223,14 +226,7 @@ def enable_audit(AuditUser, AuditUser_domain, AuditRecipient, AuditRecipient_dom
     if not monitors or monitors['outgoingEmailMonitorLevel'] == 'HEADER_ONLY':
         try:
             monitors = set_audit_config_user(AuditUser_domain, audit_user_name, audit_recipient_name, end_date, access_token)
-            # monitors = gd_client.createEmailMonitor( source_user = audit_user_name,
-            #                                          destination_user = audit_recipient_name,
-            #                                          end_date = end_date )
 
-        # except Exception as e:
-        #     exc_type, exc_obj, exc_tb = sys.exc_info()
-        #     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-        #     log_to_hec("exc_type={} exc_obj={} lineno={}".format(exc_type, fname, exc_tb.tb_lineno))
         except Exception as err:
             log_to_hec("Error: Could not create monitors for {} - Error={}".format(AuditUser, err))
 
