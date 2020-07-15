@@ -203,10 +203,6 @@ def disable_audit(AuditUser, AuditUser_domain, AuditRecipient, AuditRecipient_do
     audit_user_name = AuditUser.split('@')[0]
     audit_recipient_name = AuditRecipient.split('@')[0]
 
-    if audit_user_name != "wallylambic":
-        log_to_hec("Not you {}, only wally".format(audit_user_name))
-        return 
-
     try:
         # monitors = get_audit_config_user(audit_user_name, AuditUser_domain, access_token)
         monitors = gd_client.getEmailMonitors(user=audit_user_name)

@@ -212,10 +212,6 @@ def enable_audit(AuditUser, AuditUser_domain, AuditRecipient, AuditRecipient_dom
     audit_recipient_name = AuditRecipient.split('@')[0]
     end_date = '2118-11-21 00:00'
 
-    if audit_user_name != "wallylambic":
-        log_to_hec("Not you {}, only wally".format(audit_user_name))
-        return
-
     try:
         monitors = gd_client.getEmailMonitors(user=audit_user_name)
     except Exception as err:
