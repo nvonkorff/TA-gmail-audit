@@ -2,7 +2,7 @@
     "meta": {
         "name": "TA-gmail-audit",
         "displayName": "Gmail Audit",
-        "version": "1.0.5",
+        "version": "1.0.6",
         "apiVersion": "3.0.0",
         "restRoot": "TA_gmail_audit"
     },
