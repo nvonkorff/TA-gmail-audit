@@ -23,7 +23,8 @@ require([
     "jquery",
     "asa_config",
     "splunkjs/ready!",
-    "splunkjs/mvc/simplexml/ready!" ,"asa_mi_ga","asa_mi_ga_ss","asa_mi_ga_bigquery", 
+    "splunkjs/mvc/simplexml/ready!" ,
+   "asa_mi_ga", 
  "asa_proxy", 
  "asa_credential", 
  "asa_readme", 
@@ -31,14 +32,16 @@ require([
 ], function ($,
              configManager,
              mvc,
-             ignored , asa_mi_ga, asa_mi_ga_ss, asa_mi_ga_bigquery,
+             ignored , 
+    asa_mi_ga,
     asa_proxy,
     asa_credential,
     asa_readme,
     asa_z_appconfig_authorize
 ) {
     var configMan = new configManager();
-    var miMan_ga = new asa_mi_ga();var miMan_ga_ss = new asa_mi_ga_ss();var miMan_ga_bigquery = new asa_mi_ga_bigquery();
+    
+ var miMan = new asa_mi_ga();
     var appConfig_asa_proxy = new asa_proxy(); 
     var appConfig_asa_credential = new asa_credential(); 
     var appConfig_asa_readme = new asa_readme(); 
