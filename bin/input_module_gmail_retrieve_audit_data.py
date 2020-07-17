@@ -18,6 +18,7 @@ import splunk.appserver.mrsparkle.lib.util as util
 import string
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from gmail_Utilities import KennyLoggins, Utilities
 from gmail_Utilities import Utilities
 from apiclient import discovery
@@ -149,8 +150,7 @@ def isBase64(sb):
 
 def GetMessageBody(message):
     try:
-            # message = service.users().messages().get(userId=user_id, id=msg_id, format='raw').execute()
-            msg_str = str(base64.urlsafe_b64decode(message['raw']), 'utf-8')
+            msg_str = str(base64.urlsafe_b64decode(message["raw"]), 'utf-8')
             mime_msg = email.message_from_string(msg_str)
             messageMainType = mime_msg.get_content_maintype()
             if messageMainType == 'multipart':
@@ -183,241 +183,217 @@ def mark_as_read_batch(message_ids, user_id, GMAIL):
             log_to_hec("Error: Could not mark_as_read_batch for user=" + user_id + " - " + str(err) + ". Retrying after " + str(2 ** n) + " seconds.")
             n += 1
 
-def mark_as_read(message_ids, user_id, GMAIL):
+def mark_as_read(m_id, user_id, GMAIL):
 
-    for m_id in message_ids:
-        result = None
-        n = 0
-        while result is None:
-            try:
-                GMAIL.users().messages().modify(userId=user_id, id=m_id,body={ 'removeLabelIds': ['UNREAD']}).execute()
-                n = 0
-                result = "Success"
-                # log_to_hec("Marked message as read:" + user_id + " message_id=" + m_id)
-            except Exception as err:
-                time.sleep((2 ** n))
-                log_to_hec("Error: Could not mark_as_read for user=" + user_id + " message_id=" + m_id + " - " + str(err) + ". Retrying after " + str(2 ** n) + " seconds.")
-                n += 1
+    result = None
+    n = 0
+    while result is None:
+        try:
+            GMAIL.users().messages().modify(userId=user_id, id=m_id,body={ 'removeLabelIds': ['UNREAD']}).execute()
+            n = 0
+            result = "Success"
+            # log_to_hec("Marked message as read:" + user_id + " message_id=" + m_id)
+        except Exception as err:
+            time.sleep((2 ** n))
+            log_to_hec("Error: Could not mark_as_read for user=" + user_id + " message_id=" + m_id + " - " + str(err) + ". Retrying after " + str(2 ** n) + " seconds.")
+            n += 1
+    return
 
-def process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains):
 
-    batch = BatchHttpRequest()
-
-    for m_id in message_ids:
-        batch.add(GMAIL.users().messages().get(userId=user_id, id=m_id, format='raw'))
-
-    batch.execute()
-
+def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains):
+   
     body_data = dict()
 
-    for request_id in batch._order:
-        resp, content = batch._responses[request_id]
-        message = json.loads(content)
+    message = json.dumps(GMAIL.users().messages().get(userId=user_id, id=m_id, format='raw').execute())
+    message = json.loads(message)
 
-        if 'error' in message:
-            log_to_hec("Error encountered for request_id: " + str(request_id))
-            for key, value in message.iteritems() :
-                log_to_hec("key=" + str(key) + " value=" + str(value))
-            continue
+    if 'error' in message:
+        log_to_hec("Error encountered for request_id: " + str(request_id))
+        for key, value in message.iteritems() :
+            log_to_hec("key=" + str(key) + " value=" + str(value))
+        return
 
-        if 'id' in message:
-            m_id = message['id']
-        else:
-            log_to_hec("'id' not found in message for request_id: " + str(request_id))
-            for key, value in message.iteritems() :
-                log_to_hec("key=" + str(key) + " value=" + str(value))
-            continue
+    if 'raw' in message:
+        b = GetMessageBody(message)
+        b = email.message_from_string(b)
+    else:
+        log_to_hec("'raw' not found in message for request_id: " + str(request_id))
+        for key, value in message.iteritems() :
+            log_to_hec("key=" + str(key) + " value=" + str(value))
+        return
 
-        if 'raw' in message:
-            b = GetMessageBody(message)
-            b = email.message_from_string(b)
-        else:
-            log_to_hec("'raw' not found in message for request_id: " + str(request_id))
-            for key, value in message.iteritems() :
-                log_to_hec("key=" + str(key) + " value=" + str(value))
-            continue
+    body = ""
 
-        body = ""
+    if b.is_multipart():
+        for part in b.walk():
+            ctype = part.get_content_type()
+            cdispo = str(part.get('Content-Disposition'))
 
-        if b.is_multipart():
-            for part in b.walk():
-                ctype = part.get_content_type()
-                cdispo = str(part.get('Content-Disposition'))
-
-                # skip any text/plain (txt) attachments
-                if ctype == 'text/plain' and 'attachment' not in cdispo:
-                    body = part.get_payload(decode=True)  # decode
-                    break
-        # not multipart - i.e. plain text, no attachments, keeping fingers crossed
-        else:
-            body = b.get_payload(decode=True)
-        body = body.decode("utf-8").split('\n')
-        cleaned_body = ''
-        for line in body:
-            should_add_line = True
-            if line == '\r':
+            # skip any text/plain (txt) attachments
+            if ctype == 'text/plain' and 'attachment' not in cdispo:
+                body = part.get_payload(decode=True)  # decode
+                break
+    # not multipart - i.e. plain text, no attachments, keeping fingers crossed
+    else:
+        body = b.get_payload(decode=True)
+    body = body.decode("utf-8").split('\n')
+    cleaned_body = ''
+    for line in body:
+        should_add_line = True
+        if line == '\r':
+            should_add_line = False
+        if len(line) > 0:
+            if line[0] == '>':
                 should_add_line = False
-            if len(line) > 0:
-                if line[0] == '>':
-                    should_add_line = False
-            if len(line) > 8:
-               if line[-7:] == 'wrote:\r':
-                    should_add_line = False
-            if should_add_line:
-                cleaned_body += line + '\n'
+        if len(line) > 8:
+           if line[-7:] == 'wrote:\r':
+                should_add_line = False
+        if should_add_line:
+            cleaned_body += line + '\n'
 
-        body_data[m_id] = cleaned_body
 
-    batch = BatchHttpRequest()
+    body_data[m_id] = cleaned_body
 
-    for m_id in message_ids:
-        batch.add(GMAIL.users().messages().get(userId=user_id, id=m_id))
+    message = json.dumps(GMAIL.users().messages().get(userId=user_id, id=m_id).execute())
+    message = json.loads(message)
 
-    batch.execute()
-    for request_id in batch._order:
-        resp, content = batch._responses[request_id]
-        message = json.loads(content)
+    m_id = message['id']
 
-        if 'errror' in message:
-            log_to_hec("Error encountered for request_id: " + str(request_id))
-            for key, value in message.iteritems() :
-                log_to_hec("key=" + str(key) + " value=" + str(value))
-            continue
+    payld = message['payload'] # get payload of the message
 
-        if 'id' in message:
-            m_id = message['id']
-        else:
-            log_to_hec("'id' not found in message for request_id: " + str(request_id))
-            for key, value in message.iteritems() :
-                log_to_hec("key=" + str(key) + " value=" + str(value))
-            continue
+    if 'data' in message['payload']['body'] :
+        file_data = base64.urlsafe_b64decode(message['payload']['body']['data'].encode('ASCII'))
 
-        m_id = message['id']
+    for part in message['payload'].get('parts', ''):
+        if part['filename']:
+            if 'data' in part['body']:
+                data=part['body']['data']
+            else:
+                att_id=part['body']['attachmentId']
+                att=GMAIL.users().messages().attachments().get(userId=user_id, messageId=m_id,id=att_id).execute()
+                data=att['data']
 
-        payld = message['payload'] # get payload of the message
+            file_data = base64.urlsafe_b64decode(data.encode('UTF-8'))
 
-        if 'data' in message['payload']['body'] :
-            file_data = base64.urlsafe_b64decode(message['payload']['body']['data'].encode('ASCII'))
+    parser = HeaderParser()
+    msg = email.message_from_string(str(file_data, 'utf-8'))
 
-        for part in message['payload'].get('parts', ''):
-            if part['filename']:
-                if 'data' in part['body']:
-                    data=part['body']['data']
+    headers = {}
+
+    partno = 0
+    for part in msg.walk():
+        partkey = "part" + str(partno)
+        for key, value in part.items():
+            if partno == 0:
+                headers.update({key : value})
+            else:
+                if partkey in headers:
+                    headers[partkey].update({key : value})
                 else:
-                    att_id=part['body']['attachmentId']
-                    att=GMAIL.users().messages().attachments().get(userId=user_id, messageId=m_id,id=att_id).execute()
-                    data=att['data']
+                    headers[partkey] = ({key : value})
+        partno += 1
 
-                file_data = base64.urlsafe_b64decode(data.encode('UTF-8'))
+    to_addr = headers.get("To","undisclosed-recipients")
+    cc_addr = headers.get("CC","")
+    to_addr = ('{0} {1}'.format(to_addr, cc_addr))
+    from_addr = headers.get("From","")
 
-        parser = HeaderParser()
-        msg = email.message_from_string(str(file_data, 'utf-8'))
+    if m_id in body_data:
 
-        headers = {}
+        # Extract any links from original email body
+        body_payload = body_data[m_id]
 
-        partno = 0
-        for part in msg.walk():
-            partkey = "part" + str(partno)
-            for key, value in part.items():
-                if partno == 0:
-                    headers.update({key : value})
-                else:
-                    if partkey in headers:
-                        headers[partkey].update({key : value})
-                    else:
-                        headers[partkey] = ({key : value})
-            partno += 1
+        links = re.findall(r'(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-;]*[\w@?^=%&\/~+#-])?', body_payload)
+        email_links = []
 
-        to_addr = headers.get("To","undisclosed-recipients")
-        cc_addr = headers.get("CC","")
-        to_addr = ('{0} {1}'.format(to_addr, cc_addr))
-        from_addr = headers.get("From","")
+        for link in links:
+           link_url = link[0] + "://" + link[1] + link[2]
+           if not link_url in email_links:
+             email_links.append(link_url)
 
-        if m_id in body_data:
+        if email_links:
+             headers["links"] = email_links
 
-            # Extract any links from original email body
-            body_payload = body_data[m_id]
+    # Determine direction of message based on domains in from/to addresses
+    from_domain = []
 
-            links = re.findall(r'(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-;]*[\w@?^=%&\/~+#-])?', body_payload)
-            email_links = []
-
-            for link in links:
-               link_url = link[0] + "://" + link[1] + link[2]
-               if not link_url in email_links:
-                 email_links.append(link_url)
-
-            if email_links:
-                 headers["links"] = email_links
-
-        # Determine direction of message based on domains in from/to addresses
-        from_domain = []
-
-        to_domains = []
-        to_domain = []
+    to_domains = []
+    to_domain = []
 
 
-        try:
-            to_domains = re.findall('@(([A-Za-z0-9|-]+\.)*[A-Za-z0-9|-]+\.[A-Za-z]+)', to_addr)
-        except AttributeError:
-            log_to_hec('Error: "to" address domain regex failed: {0}'.format(to_addr))
-            continue
-        for domain in to_domains:
-           to_domain.append(domain[0])
+    try:
+        to_domains = re.findall('@(([A-Za-z0-9|-]+\.)*[A-Za-z0-9|-]+\.[A-Za-z]+)', to_addr)
+    except AttributeError:
+        log_to_hec('Error: "to" address domain regex failed: {0}'.format(to_addr))
+        return
+    for domain in to_domains:
+       to_domain.append(domain[0])
 
-        try:
-            from_domain = re.search('@(([A-Za-z0-9|-]+\.)*[A-Za-z0-9|-]+\.[A-Za-z]+)', from_addr).group(1)
-        except AttributeError:
-            log_to_hec('Error: "from" address domain regex failed: {0}'.format(from_addr))
-            continue
+    try:
+        from_domain = re.search('@(([A-Za-z0-9|-]+\.)*[A-Za-z0-9|-]+\.[A-Za-z]+)', from_addr).group(1)
+    except AttributeError:
+        log_to_hec('Error: "from" address domain regex failed: {0}'.format(from_addr))
+        return
 
 
 
-        local_domains_string = '|'.join(map(lambda x: x.decode('utf-8'), local_domains))
-        regex = '^(?!({0})).*'.format(local_domains_string)
+    local_domains_string = '|'.join(map(lambda x: x.decode('utf-8'), local_domains))
+    regex = '^(?!({0})).*'.format(local_domains_string)
 
-        # log_to_hec("regex={}".format(regex))
+    # log_to_hec("regex={}".format(regex))
 
-        map(lambda x: x.decode('utf-8'), local_domains)
+    map(lambda x: x.decode('utf-8'), local_domains)
 
-        # log_to_hec('to_domains: {0} from_domain: {1} to_addr: {2} local_domains: {3}'.format(to_domain, from_domain, to_addr, local_domains))
+    # log_to_hec('to_domains: {0} from_domain: {1} to_addr: {2} local_domains: {3}'.format(to_domain, from_domain, to_addr, local_domains))
 
-        r = re.compile(regex, re.IGNORECASE)
-        external_domains = list(filter(r.match, to_domain))
+    r = re.compile(regex, re.IGNORECASE)
+    external_domains = list(filter(r.match, to_domain))
 
-        if from_domain.encode('utf-8') in local_domains and len(external_domains) == 0:
-            message_info = "internal"
-        elif from_domain.encode('utf-8') not in local_domains:
-            message_info = "inbound"
-        elif from_domain.encode('utf-8') in local_domains and len(external_domains) > 0:
-            message_info = "outbound"
+    if from_domain.encode('utf-8') in local_domains and len(external_domains) == 0:
+        message_info = "internal"
+    elif from_domain.encode('utf-8') not in local_domains:
+        message_info = "inbound"
+    elif from_domain.encode('utf-8') in local_domains and len(external_domains) > 0:
+        message_info = "outbound"
 
-        headers["external_domains"] = external_domains
-        headers["message_info"] = message_info
+    headers["external_domains"] = external_domains
+    headers["message_info"] = message_info
 
-        if 'Date' in msg:
-            msg_date = msg['Date']
-            # Strip off an anything from first bracket. This is causing the dateparser to fail on certain patterns e.g.: Tue, 11 Dec 2018 22:55:36 +0000 (GMT+00:00)
-            head, sep, tail = msg_date.partition('(')
-            msg_date = head
-        else:
-            msg_date = datetime.now()
+    if 'Date' in msg:
+        msg_date = msg['Date']
+        # Strip off an anything from first bracket. This is causing the dateparser to fail on certain patterns e.g.: Tue, 11 Dec 2018 22:55:36 +0000 (GMT+00:00)
+        head, sep, tail = msg_date.partition('(')
+        msg_date = head
+    else:
+        msg_date = datetime.now()
 
 
-        try:
-            get_date_obj = dateutil.parser.parse(str(msg_date))
-            eventtime = int(time.mktime(get_date_obj.timetuple()))
-        except Exception as e:
-            log_to_hec('Error: "msg_date" is invalid: {0}'.format(msg_date))
-            msg_date = datetime.now()
+    try:
+        get_date_obj = dateutil.parser.parse(str(msg_date))
+        eventtime = int(time.mktime(get_date_obj.timetuple()))
+    except Exception as e:
+        log_to_hec('Error: "msg_date" is invalid: {0}'.format(msg_date))
+        msg_date = datetime.now()
 
-        # eventtime = time.time()
-        sourcetype = "gmail:audit:headers"
+    # eventtime = time.time()
+    sourcetype = "gmail:audit:headers"
 
-        send_to_splunk(splunk_host, auth_token, headers, sourcetype, eventtime)
+    send_to_splunk(splunk_host, auth_token, headers, sourcetype, eventtime)
 
     # Mark the messages as read
-    # mark_as_read(message_ids, user_id, GMAIL)
-    mark_as_read_batch(message_ids, user_id, GMAIL)
+    mark_as_read(m_id, user_id, GMAIL)
+
+    return    
+
+def process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains, batch_size):
+
+    max_threads = int(batch_size)
+    log_to_hec("max_threads={}".format(batch_size))
+
+    with ThreadPoolExecutor(max_workers=max_threads) as executor:
+        for m_id in message_ids:
+            futures = executor.submit(process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains))
+
     return
 
 def validate_input(helper, definition):
@@ -539,7 +515,7 @@ def run(session_key, domain, splunk_host, auth_token, batch_size, local_domains)
         for msg in msg_list:
             m_id = msg['id'] # get id of individual message
             message_ids.append(m_id)
-        process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains)
+        process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains, batch_size)
         processed_message_count += len(msg_list)
 
         log_msg = ("Processed=" + str(processed_message_count))
@@ -576,7 +552,7 @@ def run(session_key, domain, splunk_host, auth_token, batch_size, local_domains)
             m_id = msg['id'] # get id of individual message
             message_ids.append(m_id)
 
-        process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains)
+        process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains, batch_size)
 
         processed_message_count += len(msg_list)
 
