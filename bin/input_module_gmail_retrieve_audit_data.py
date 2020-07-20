@@ -35,6 +35,7 @@ from oauth2client.file import Storage
 from requests.exceptions import *
 from splunk.appserver.mrsparkle.lib.util import isCloud
 from splunk.appserver.mrsparkle.lib.util import make_splunkhome_path
+from random import randrange
 
 
 # SYSTEM EXIT CODES
@@ -167,14 +168,14 @@ def GetMessageBody(message):
             log_to_hec('An error occurred: %s' % error)
 
 
-def mark_as_read_batch(message_ids, user_id, GMAIL):
+def mark_as_read_batch(message_ids, user_id, GMAIL, http_session):
 
     result = None
     n = 0
     while result is None:
         try:
             body = {'ids': message_ids, 'removeLabelIds': ['UNREAD']}
-            GMAIL.users().messages().batchModify(userId=user_id, body=body).execute()
+            GMAIL.users().messages().batchModify(userId=user_id, body=body).execute(http=http_session)
             n = 0
             result = "Success"
             # log_to_hec("Marked message as read:" + user_id + " message_id=" + m_id)
@@ -183,16 +184,16 @@ def mark_as_read_batch(message_ids, user_id, GMAIL):
             log_to_hec("Error: Could not mark_as_read_batch for user=" + user_id + " - " + str(err) + ". Retrying after " + str(2 ** n) + " seconds.")
             n += 1
 
-def mark_as_read(m_id, user_id, GMAIL):
+def mark_as_read(m_id, user_id, GMAIL, http_session):
 
     result = None
     n = 0
     while result is None:
         try:
-            GMAIL.users().messages().modify(userId=user_id, id=m_id,body={ 'removeLabelIds': ['UNREAD']}).execute()
+            GMAIL.users().messages().modify(userId=user_id, id=m_id,body={ 'removeLabelIds': ['UNREAD']}).execute(http=http_session)
             n = 0
             result = "Success"
-            # log_to_hec("Marked message as read:" + user_id + " message_id=" + m_id)
+            log_to_hec("Marked message as read:" + user_id + " message_id=" + m_id)
         except Exception as err:
             time.sleep((2 ** n))
             log_to_hec("Error: Could not mark_as_read for user=" + user_id + " message_id=" + m_id + " - " + str(err) + ". Retrying after " + str(2 ** n) + " seconds.")
@@ -200,11 +201,27 @@ def mark_as_read(m_id, user_id, GMAIL):
     return
 
 
-def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains):
-   
+def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains, domain, _APP_NAME, session_key):
+ 
+    log_to_hec("Processing message_id={}".format(m_id)) 
+
+    # Random sleep time to reduce api rate limiting
+    sec = randrange(2) 
+    ms = randrange(100) 
+    sleep_time="{}.{}".format(sec, ms)
+    log_to_hec("Sleeping for {} seconds".format(sleep_time)) 
+    time.sleep(float(sleep_time))
+
     body_data = dict()
 
-    message = json.dumps(GMAIL.users().messages().get(userId=user_id, id=m_id, format='raw').execute())
+    http_session = auth_http(domain, _APP_NAME, session_key)
+
+    try:
+        message = json.dumps(GMAIL.users().messages().get(userId=user_id, id=m_id, format='raw').execute(http=http_session))
+    except Exception as err:
+        log_to_hec("Error: Could not get message_id={} - {}".format(m_id, err))
+        return
+
     message = json.loads(message)
 
     if 'error' in message:
@@ -254,7 +271,12 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
 
     body_data[m_id] = cleaned_body
 
-    message = json.dumps(GMAIL.users().messages().get(userId=user_id, id=m_id).execute())
+    try:
+        message = json.dumps(GMAIL.users().messages().get(userId=user_id, id=m_id).execute(http=http_session))
+    except Exception as err:
+        log_to_hec("Error: Could not get message_id={} - {}".format(m_id, err))
+        return
+
     message = json.loads(message)
 
     m_id = message['id']
@@ -270,7 +292,7 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
                 data=part['body']['data']
             else:
                 att_id=part['body']['attachmentId']
-                att=GMAIL.users().messages().attachments().get(userId=user_id, messageId=m_id,id=att_id).execute()
+                att=GMAIL.users().messages().attachments().get(userId=user_id, messageId=m_id,id=att_id).execute(http=http_session)
                 data=att['data']
 
             file_data = base64.urlsafe_b64decode(data.encode('UTF-8'))
@@ -381,18 +403,21 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
     send_to_splunk(splunk_host, auth_token, headers, sourcetype, eventtime)
 
     # Mark the messages as read
-    mark_as_read(m_id, user_id, GMAIL)
+    mark_as_read(m_id, user_id, GMAIL, http_session)
 
-    return    
+    log_to_hec("Processed message_id={}".format(m_id)) 
 
-def process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains, batch_size):
+    return
+
+def process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains, batch_size, domain, _APP_NAME, session_key):
 
     max_threads = int(batch_size)
     log_to_hec("max_threads={}".format(batch_size))
 
     with ThreadPoolExecutor(max_workers=max_threads) as executor:
+        futures = []
         for m_id in message_ids:
-            futures = executor.submit(process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains))
+            futures = executor.submit(process_message, m_id, user_id, GMAIL, splunk_host, auth_token, local_domains, domain, _APP_NAME, session_key)
 
     return
 
@@ -473,6 +498,47 @@ def refresh_auth_token(domain, app_name, session_key):
 
     return access_token, expires_in, service
 
+def auth_http(domain, app_name, session_key):
+
+    utils = Utilities(app_name=app_name, session_key=session_key)
+
+    log.info("action=getting_credentials domain={}".format(domain))
+    goacd = utils.get_creds_splunk_client(app_name, domain)
+    log.info("action=getting_credentials domain={} goacd_type={}".format(domain, type(goacd)))
+    google_oauth_credentials = json.loads(goacd)
+
+    assert type(google_oauth_credentials) is dict
+    if goacd is None:
+        log.error("operation=load_credentials error_message={}".format("No Credentials Found in Store"))
+        sys.exit(_SYS_EXIT_FAILED_GET_OAUTH_CREDENTIALS)
+
+    proxy_config_file = os.path.join(_app_local_directory, "proxy.conf")
+    proxy_info = None
+    h = None
+
+    utils = Utilities(app_name=_APP_NAME, session_key=session_key)
+    if os.path.isfile(proxy_config_file):
+        try:
+            pc = utils.get_proxy_configuration("gapps_proxy")
+            sptype = socks.PROXY_TYPE_HTTP
+            proxy_info = httplib2.ProxyInfo(sptype, pc["host"], int(pc["port"]),
+                                            proxy_user=pc["authentication"]["username"],
+                                            proxy_pass=pc["authentication"]["password"])
+        except Exception as e:
+            log.warn("action=load_proxy status=failed message=No_Proxy_Information stanza=gapps_proxy")
+
+    if proxy_info is not None:
+        log.info("proxy_info={0}".format(proxy_info.__dict__))
+
+    # Build HTTP session using OAuth creds
+    http = httplib2.Http(proxy_info=proxy_info)
+
+    credentials = oauth2client.client.OAuth2Credentials.from_json(json.dumps(google_oauth_credentials))
+
+    http_session = credentials.authorize(http)
+
+    return http_session
+
 def run(session_key, domain, splunk_host, auth_token, batch_size, local_domains):
 
     script = sys.argv[0]
@@ -515,7 +581,7 @@ def run(session_key, domain, splunk_host, auth_token, batch_size, local_domains)
         for msg in msg_list:
             m_id = msg['id'] # get id of individual message
             message_ids.append(m_id)
-        process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains, batch_size)
+        process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains, batch_size, domain, _APP_NAME, session_key)
         processed_message_count += len(msg_list)
 
         log_msg = ("Processed=" + str(processed_message_count))
