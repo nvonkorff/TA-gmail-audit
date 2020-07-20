@@ -1,0 +1,18 @@
+Version |version| of |long_name| has the following known issues:
+
+- According to stackoverflow, there are indications that the Google Apps Admin API has an unspecified delay introduced into the events that are collected. This is most likely due to how Google collects the events and the global nature of the events. To mitigate this issue, the |long_name| Modular Input has a built-in delay in the consumption of events. If you run the modular input at 30 minutes, there will be a 30 minute delay of events. If you run at 1 hour, there will be a 1 hour delay in events.
+- References
+
+    - https://support.google.com/a/answer/7061566
+    - http://stackoverflow.com/questions/27389354/minimal-delay-when-listing-activities-using-the-reports-api
+    - http://stackoverflow.com/questions/30850838/what-is-the-delay-between-a-event-happens-and-it-is-reflected-in-admin-reports-a
+
+- These are the currently requested scopes:
+    
+    - https://www.googleapis.com/auth/admin.reports.audit.readonly
+    - https://www.googleapis.com/auth/admin.reports.usage.readonly
+    - https://www.googleapis.com/auth/analytics.readonly
+    - https://www.googleapis.com/auth/admin.directory.user.readonly
+    - https://www.googleapis.com/auth/admin.directory.device.chromeos.readonly
+    - https://www.googleapis.com/auth/drive.metadata.readonly
+                                        

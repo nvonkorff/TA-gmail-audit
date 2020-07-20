@@ -1,0 +1,39 @@
+Version 1.2.0
+-------------
+
+- Adds the `analytics:report`, and `analytics:metadata` reports (advanced)
+- Adds the `report:mobile` and `report:groups` reports (included in `report:all`)
+- Adds the `usage:customer`, `usage:user`, and `usage:chrome` reports.
+
+- Support
+
+    - [ASA-11] - Setup page malfunction
+    - [ASA-57] - Proxy Support for GApps
+
+- Bug
+
+    - [ASA-2] - Docs/Drive/Calendar events not timestamping correctly
+    - [ASA-3] - Missed Audit Events
+    - [ASA-4] - Failure for Usage Events (customer/user)
+    - [ASA-5] - Historical Days Configuration Option
+    - [ASA-6] - Transforms are old and deprecated
+    - [ASA-12] - Setup.xml
+    - [ASA-13] - Authorize_Splunk dashboard reset
+    - [ASA-20] - Failure to load checkpoint
+    - [ASA-41] - Authorization Failure on HF
+    - [ASA-120] - Header breaks with 6.5 compat
+    - [ASA-198] - Controller Endpoints not supported.
+
+- New Feature
+
+    - [ASA-19] - Error Dashboard
+    - [ASA-103] - Add Access to Google Analytics API
+    - [ASA-126] - MC Checklist and Health Path
+    - [ASA-206] - Chrome OS Devices
+
+- Improvement
+
+    - [ASA-9] - Google API  - 1 hour buffer.
+    - [ASA-10] - debug/refresh endpoint causes modular input to fire
+    - [ASA-37] - Support Proxy for calls
+    - [ASA-115] - Update MI for backfill

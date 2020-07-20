@@ -1,4 +1,3 @@
-import StringIO
 import argparse
 import base64
 import datetime
@@ -19,8 +18,9 @@ import splunk.appserver.mrsparkle.lib.util as util
 import string
 import sys
 import time
-from Utilities import KennyLoggins, Utilities
-from Utilities import Utilities
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from gmail_Utilities import KennyLoggins, Utilities
+from gmail_Utilities import Utilities
 from apiclient import discovery
 from apiclient import errors
 from apiclient.discovery import build
@@ -35,6 +35,7 @@ from oauth2client.file import Storage
 from requests.exceptions import *
 from splunk.appserver.mrsparkle.lib.util import isCloud
 from splunk.appserver.mrsparkle.lib.util import make_splunkhome_path
+from random import randrange
 
 
 # SYSTEM EXIT CODES
@@ -87,7 +88,7 @@ def send_to_splunk(splunk_host, auth_token, payload, sourcetype, eventtime):
       request_url = "https://%s:8088/services/collector" % splunk_host
 
       # Encode data in JSON utf-8 format
-      post_data = json.dumps(post_data).encode('utf8')
+      post_data = json.dumps(post_data).encode('utf-8')
 
       # Encode data in JSON utf-8 format
       # data = json.dumps(post_data)
@@ -150,32 +151,31 @@ def isBase64(sb):
 
 def GetMessageBody(message):
     try:
-            # message = service.users().messages().get(userId=user_id, id=msg_id, format='raw').execute()
-            msg_str = base64.urlsafe_b64decode(message['raw'].encode('ASCII'))
+            msg_str = str(base64.urlsafe_b64decode(message["raw"]), 'utf-8')
             mime_msg = email.message_from_string(msg_str)
             messageMainType = mime_msg.get_content_maintype()
             if messageMainType == 'multipart':
                 for part in mime_msg.get_payload():
                         if part.get_content_maintype() == 'text':
-                                return base64.urlsafe_b64decode(part.get_payload().encode('ASCII'))
+                                return str(base64.urlsafe_b64decode(part.get_payload()), 'utf-8')
                 return ""
             elif messageMainType == 'text':
                 if isBase64(mime_msg.get_payload()):
-                    return base64.urlsafe_b64decode(mime_msg.get_payload().encode('ASCII'))
+                    return str(base64.urlsafe_b64decode(mime_msg.get_payload()), 'utf-8')
                 else:
                     return mime_msg.get_payload()
-    except errors.HttpError, error:
+    except errors.HttpError as error:
             log_to_hec('An error occurred: %s' % error)
 
 
-def mark_as_read_batch(message_ids, user_id, GMAIL):
+def mark_as_read_batch(message_ids, user_id, GMAIL, http_session):
 
     result = None
     n = 0
     while result is None:
         try:
             body = {'ids': message_ids, 'removeLabelIds': ['UNREAD']}
-            GMAIL.users().messages().batchModify(userId=user_id, body=body).execute()
+            GMAIL.users().messages().batchModify(userId=user_id, body=body).execute(http=http_session)
             n = 0
             result = "Success"
             # log_to_hec("Marked message as read:" + user_id + " message_id=" + m_id)
@@ -184,234 +184,241 @@ def mark_as_read_batch(message_ids, user_id, GMAIL):
             log_to_hec("Error: Could not mark_as_read_batch for user=" + user_id + " - " + str(err) + ". Retrying after " + str(2 ** n) + " seconds.")
             n += 1
 
-def mark_as_read(message_ids, user_id, GMAIL):
+def mark_as_read(m_id, user_id, GMAIL, http_session):
 
-    for m_id in message_ids:
-        result = None
-        n = 0
-        while result is None:
-            try:
-                GMAIL.users().messages().modify(userId=user_id, id=m_id,body={ 'removeLabelIds': ['UNREAD']}).execute()
-                n = 0
-                result = "Success"
-                # log_to_hec("Marked message as read:" + user_id + " message_id=" + m_id)
-            except Exception as err:
-                time.sleep((2 ** n))
-                log_to_hec("Error: Could not mark_as_read for user=" + user_id + " message_id=" + m_id + " - " + str(err) + ". Retrying after " + str(2 ** n) + " seconds.")
-                n += 1
+    result = None
+    n = 0
+    while result is None:
+        try:
+            GMAIL.users().messages().modify(userId=user_id, id=m_id,body={ 'removeLabelIds': ['UNREAD']}).execute(http=http_session)
+            n = 0
+            result = "Success"
+            log_to_hec("Marked message as read:" + user_id + " message_id=" + m_id)
+        except Exception as err:
+            time.sleep((2 ** n))
+            log_to_hec("Error: Could not mark_as_read for user=" + user_id + " message_id=" + m_id + " - " + str(err) + ". Retrying after " + str(2 ** n) + " seconds.")
+            n += 1
+    return
 
-def process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains):
 
-    batch = BatchHttpRequest()
+def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains, domain, _APP_NAME, session_key):
+ 
+    log_to_hec("Processing message_id={}".format(m_id)) 
 
-    for m_id in message_ids:
-        batch.add(GMAIL.users().messages().get(userId=user_id, id=m_id, format='raw'))
-
-    batch.execute()
+    # Random sleep time to reduce api rate limiting
+    sec = randrange(2) 
+    ms = randrange(100) 
+    sleep_time="{}.{}".format(sec, ms)
+    log_to_hec("Sleeping for {} seconds".format(sleep_time)) 
+    time.sleep(float(sleep_time))
 
     body_data = dict()
 
-    for request_id in batch._order:
-        resp, content = batch._responses[request_id]
-        message = json.loads(content)
+    http_session = auth_http(domain, _APP_NAME, session_key)
 
-        if 'error' in message:
-            log_to_hec("Error encountered for request_id: " + str(request_id))
-            for key, value in message.iteritems() :
-                log_to_hec("key=" + str(key) + " value=" + str(value))
-            continue
+    try:
+        message = json.dumps(GMAIL.users().messages().get(userId=user_id, id=m_id, format='raw').execute(http=http_session))
+    except Exception as err:
+        log_to_hec("Error: Could not get message_id={} - {}".format(m_id, err))
+        return
 
-        if 'id' in message:
-            m_id = message['id']
-        else:
-            log_to_hec("'id' not found in message for request_id: " + str(request_id))
-            for key, value in message.iteritems() :
-                log_to_hec("key=" + str(key) + " value=" + str(value))
-            continue
+    message = json.loads(message)
 
-        if 'raw' in message:
-            b = GetMessageBody(message)
-            b = email.message_from_string(b)
-        else:
-            log_to_hec("'raw' not found in message for request_id: " + str(request_id))
-            for key, value in message.iteritems() :
-                log_to_hec("key=" + str(key) + " value=" + str(value))
-            continue
+    if 'error' in message:
+        log_to_hec("Error encountered for request_id: " + str(request_id))
+        for key, value in message.iteritems() :
+            log_to_hec("key=" + str(key) + " value=" + str(value))
+        return
 
-        body = ""
+    if 'raw' in message:
+        b = GetMessageBody(message)
+        b = email.message_from_string(b)
+    else:
+        log_to_hec("'raw' not found in message for request_id: " + str(request_id))
+        for key, value in message.iteritems() :
+            log_to_hec("key=" + str(key) + " value=" + str(value))
+        return
 
-        if b.is_multipart():
-            for part in b.walk():
-                ctype = part.get_content_type()
-                cdispo = str(part.get('Content-Disposition'))
+    body = ""
 
-                # skip any text/plain (txt) attachments
-                if ctype == 'text/plain' and 'attachment' not in cdispo:
-                    body = part.get_payload(decode=True)  # decode
-                    break
-        # not multipart - i.e. plain text, no attachments, keeping fingers crossed
-        else:
-            body = b.get_payload(decode=True)
-        body = body.split('\n')
-        cleaned_body = ''
-        for line in body:
-            should_add_line = True
-            if line == '\r':
+    if b.is_multipart():
+        for part in b.walk():
+            ctype = part.get_content_type()
+            cdispo = str(part.get('Content-Disposition'))
+
+            # skip any text/plain (txt) attachments
+            if ctype == 'text/plain' and 'attachment' not in cdispo:
+                body = part.get_payload(decode=True)  # decode
+                break
+    # not multipart - i.e. plain text, no attachments, keeping fingers crossed
+    else:
+        body = b.get_payload(decode=True)
+    body = body.decode("utf-8").split('\n')
+    cleaned_body = ''
+    for line in body:
+        should_add_line = True
+        if line == '\r':
+            should_add_line = False
+        if len(line) > 0:
+            if line[0] == '>':
                 should_add_line = False
-            if len(line) > 0:
-                if line[0] == '>':
-                    should_add_line = False
-            if len(line) > 8:
-               if line[-7:] == 'wrote:\r':
-                    should_add_line = False
-            if should_add_line:
-                cleaned_body += line + '\n'
+        if len(line) > 8:
+           if line[-7:] == 'wrote:\r':
+                should_add_line = False
+        if should_add_line:
+            cleaned_body += line + '\n'
 
-        body_data[m_id] = cleaned_body
 
-    batch = BatchHttpRequest()
+    body_data[m_id] = cleaned_body
 
-    for m_id in message_ids:
-        batch.add(GMAIL.users().messages().get(userId=user_id, id=m_id))
+    try:
+        message = json.dumps(GMAIL.users().messages().get(userId=user_id, id=m_id).execute(http=http_session))
+    except Exception as err:
+        log_to_hec("Error: Could not get message_id={} - {}".format(m_id, err))
+        return
 
-    batch.execute()
-    for request_id in batch._order:
-        resp, content = batch._responses[request_id]
-        message = json.loads(content)
+    message = json.loads(message)
 
-        if 'errror' in message:
-            log_to_hec("Error encountered for request_id: " + str(request_id))
-            for key, value in message.iteritems() :
-                log_to_hec("key=" + str(key) + " value=" + str(value))
-            continue
+    m_id = message['id']
 
-        if 'id' in message:
-            m_id = message['id']
-        else:
-            log_to_hec("'id' not found in message for request_id: " + str(request_id))
-            for key, value in message.iteritems() :
-                log_to_hec("key=" + str(key) + " value=" + str(value))
-            continue
+    payld = message['payload'] # get payload of the message
 
-        m_id = message['id']
+    if 'data' in message['payload']['body'] :
+        file_data = base64.urlsafe_b64decode(message['payload']['body']['data'].encode('ASCII'))
 
-        payld = message['payload'] # get payload of the message
+    for part in message['payload'].get('parts', ''):
+        if part['filename']:
+            if 'data' in part['body']:
+                data=part['body']['data']
+            else:
+                att_id=part['body']['attachmentId']
+                att=GMAIL.users().messages().attachments().get(userId=user_id, messageId=m_id,id=att_id).execute(http=http_session)
+                data=att['data']
 
-        if 'data' in message['payload']['body'] :
-            file_data = base64.urlsafe_b64decode(message['payload']['body']['data'].encode('ASCII'))
+            file_data = base64.urlsafe_b64decode(data.encode('UTF-8'))
 
-        for part in message['payload'].get('parts', ''):
-            if part['filename']:
-                if 'data' in part['body']:
-                    data=part['body']['data']
+    parser = HeaderParser()
+    msg = email.message_from_string(str(file_data, 'utf-8'))
+
+    headers = {}
+
+    partno = 0
+    for part in msg.walk():
+        partkey = "part" + str(partno)
+        for key, value in part.items():
+            if partno == 0:
+                headers.update({key : value})
+            else:
+                if partkey in headers:
+                    headers[partkey].update({key : value})
                 else:
-                    att_id=part['body']['attachmentId']
-                    att=GMAIL.users().messages().attachments().get(userId=user_id, messageId=m_id,id=att_id).execute()
-                    data=att['data']
+                    headers[partkey] = ({key : value})
+        partno += 1
 
-                file_data = base64.urlsafe_b64decode(data.encode('UTF-8'))
+    to_addr = headers.get("To","undisclosed-recipients")
+    cc_addr = headers.get("CC","")
+    to_addr = ('{0} {1}'.format(to_addr, cc_addr))
+    from_addr = headers.get("From","")
 
-        parser = HeaderParser()
-        msg = email.message_from_string(file_data)
+    if m_id in body_data:
 
-        headers = {}
+        # Extract any links from original email body
+        body_payload = body_data[m_id]
 
-        partno = 0
-        for part in msg.walk():
-            partkey = "part" + str(partno)
-            for key, value in part.items():
-                if partno == 0:
-                    headers.update({key : value})
-                else:
-                    if partkey in headers:
-                        headers[partkey].update({key : value})
-                    else:
-                        headers[partkey] = ({key : value})
-            partno += 1
+        links = re.findall(r'(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-;]*[\w@?^=%&\/~+#-])?', body_payload)
+        email_links = []
 
-        to_addr = headers.get("To","undisclosed-recipients")
-        cc_addr = headers.get("CC","")
-        to_addr = ('{0} {1}'.format(to_addr, cc_addr))
-        from_addr = headers.get("From","")
+        for link in links:
+           link_url = link[0] + "://" + link[1] + link[2]
+           if not link_url in email_links:
+             email_links.append(link_url)
 
-        if m_id in body_data:
+        if email_links:
+             headers["links"] = email_links
 
-            # Extract any links from original email body
-            body_payload = body_data[m_id]
+    # Determine direction of message based on domains in from/to addresses
+    from_domain = []
 
-            links = re.findall(r'(http|ftp|https):\/\/([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:\/~+#-;]*[\w@?^=%&\/~+#-])?', body_payload)
-            email_links = []
-
-            for link in links:
-               link_url = link[0] + "://" + link[1] + link[2]
-               if not link_url in email_links:
-                 email_links.append(link_url)
-
-            if email_links:
-                 headers["links"] = email_links
-
-        # Determine direction of message based on domains in from/to addresses
-        from_domain = []
-
-        to_domains = []
-        to_domain = []
+    to_domains = []
+    to_domain = []
 
 
-        try:
-            to_domains = re.findall('@(([A-Za-z0-9|-]+\.)*[A-Za-z0-9|-]+\.[A-Za-z]+)', to_addr)
-        except AttributeError:
-            log_to_hec('Error: "to" address domain regex failed: {0}'.format(to_addr))
-            continue
-        for domain in to_domains:
-           to_domain.append(domain[0])
+    try:
+        to_domains = re.findall('@(([A-Za-z0-9|-]+\.)*[A-Za-z0-9|-]+\.[A-Za-z]+)', to_addr)
+    except AttributeError:
+        log_to_hec('Error: "to" address domain regex failed: {0}'.format(to_addr))
+        return
+    for domain in to_domains:
+       to_domain.append(domain[0])
 
-        try:
-            from_domain = re.search('@(([A-Za-z0-9|-]+\.)*[A-Za-z0-9|-]+\.[A-Za-z]+)', from_addr).group(1)
-        except AttributeError:
-            log_to_hec('Error: "from" address domain regex failed: {0}'.format(from_addr))
-            continue
-
-        # log_to_hec('to_domains: {0} from_domain: {1} to_addr: {2} local_domains: {3}'.format(to_domain, from_domain, to_addr, local_domains))
-
-        regex = '^(?!({0})).*'.format("|".join(local_domains))
-
-        r = re.compile(regex, re.IGNORECASE)
-        external_domains = list(filter(r.match, to_domain))
-
-        if from_domain in local_domains and len(external_domains) == 0:
-            message_info = "internal"
-        elif from_domain not in local_domains:
-            message_info = "inbound"
-        elif from_domain in local_domains and len(external_domains) > 0:
-            message_info = "outbound"
-
-        headers["external_domains"] = external_domains
-        headers["message_info"] = message_info
-
-        if 'Date' in msg:
-            msg_date = msg['Date']
-            # Strip off an anything from first bracket. This is causing the dateparser to fail on certain patterns e.g.: Tue, 11 Dec 2018 22:55:36 +0000 (GMT+00:00)
-            head, sep, tail = msg_date.partition('(')
-            msg_date = head
-        else:
-            msg_date = datetime.now()
+    try:
+        from_domain = re.search('@(([A-Za-z0-9|-]+\.)*[A-Za-z0-9|-]+\.[A-Za-z]+)', from_addr).group(1)
+    except AttributeError:
+        log_to_hec('Error: "from" address domain regex failed: {0}'.format(from_addr))
+        return
 
 
-        try:
-            get_date_obj = dateutil.parser.parse(str(msg_date))
-            eventtime = int(time.mktime(get_date_obj.timetuple()))
-        except Exception, e:
-            log_to_hec('Error: "msg_date" is invalid: {0}'.format(msg_date))
-            msg_date = datetime.now()
 
-        # eventtime = time.time()
-        sourcetype = "gmail:audit:headers"
+    local_domains_string = '|'.join(map(lambda x: x.decode('utf-8'), local_domains))
+    regex = '^(?!({0})).*'.format(local_domains_string)
 
-        send_to_splunk(splunk_host, auth_token, headers, sourcetype, eventtime)
+    # log_to_hec("regex={}".format(regex))
+
+    map(lambda x: x.decode('utf-8'), local_domains)
+
+    # log_to_hec('to_domains: {0} from_domain: {1} to_addr: {2} local_domains: {3}'.format(to_domain, from_domain, to_addr, local_domains))
+
+    r = re.compile(regex, re.IGNORECASE)
+    external_domains = list(filter(r.match, to_domain))
+
+    if from_domain.encode('utf-8') in local_domains and len(external_domains) == 0:
+        message_info = "internal"
+    elif from_domain.encode('utf-8') not in local_domains:
+        message_info = "inbound"
+    elif from_domain.encode('utf-8') in local_domains and len(external_domains) > 0:
+        message_info = "outbound"
+
+    headers["external_domains"] = external_domains
+    headers["message_info"] = message_info
+
+    if 'Date' in msg:
+        msg_date = msg['Date']
+        # Strip off an anything from first bracket. This is causing the dateparser to fail on certain patterns e.g.: Tue, 11 Dec 2018 22:55:36 +0000 (GMT+00:00)
+        head, sep, tail = msg_date.partition('(')
+        msg_date = head
+    else:
+        msg_date = datetime.now()
+
+
+    try:
+        get_date_obj = dateutil.parser.parse(str(msg_date))
+        eventtime = int(time.mktime(get_date_obj.timetuple()))
+    except Exception as e:
+        log_to_hec('Error: "msg_date" is invalid: {0}'.format(msg_date))
+        msg_date = datetime.now()
+
+    # eventtime = time.time()
+    sourcetype = "gmail:audit:headers"
+
+    send_to_splunk(splunk_host, auth_token, headers, sourcetype, eventtime)
 
     # Mark the messages as read
-    # mark_as_read(message_ids, user_id, GMAIL)
-    mark_as_read_batch(message_ids, user_id, GMAIL)
+    mark_as_read(m_id, user_id, GMAIL, http_session)
+
+    log_to_hec("Processed message_id={}".format(m_id)) 
+
+    return
+
+def process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains, batch_size, domain, _APP_NAME, session_key):
+
+    max_threads = int(batch_size)
+    log_to_hec("max_threads={}".format(batch_size))
+
+    with ThreadPoolExecutor(max_workers=max_threads) as executor:
+        futures = []
+        for m_id in message_ids:
+            futures = executor.submit(process_message, m_id, user_id, GMAIL, splunk_host, auth_token, local_domains, domain, _APP_NAME, session_key)
+
     return
 
 def validate_input(helper, definition):
@@ -447,7 +454,7 @@ def refresh_auth_token(domain, app_name, session_key):
     utils = Utilities(app_name=app_name, session_key=session_key)
 
     log.info("action=getting_credentials domain={}".format(domain))
-    goacd = utils.get_credential(app_name, domain)
+    goacd = utils.get_creds_splunk_client(app_name, domain)
     log.info("action=getting_credentials domain={} goacd_type={}".format(domain, type(goacd)))
     google_oauth_credentials = json.loads(goacd)
 
@@ -468,7 +475,7 @@ def refresh_auth_token(domain, app_name, session_key):
             proxy_info = httplib2.ProxyInfo(sptype, pc["host"], int(pc["port"]),
                                             proxy_user=pc["authentication"]["username"],
                                             proxy_pass=pc["authentication"]["password"])
-        except Exception, e:
+        except Exception as e:
             log.warn("action=load_proxy status=failed message=No_Proxy_Information stanza=gapps_proxy")
 
     if proxy_info is not None:
@@ -490,6 +497,47 @@ def refresh_auth_token(domain, app_name, session_key):
     expires_in = token_info.expires_in
 
     return access_token, expires_in, service
+
+def auth_http(domain, app_name, session_key):
+
+    utils = Utilities(app_name=app_name, session_key=session_key)
+
+    log.info("action=getting_credentials domain={}".format(domain))
+    goacd = utils.get_creds_splunk_client(app_name, domain)
+    log.info("action=getting_credentials domain={} goacd_type={}".format(domain, type(goacd)))
+    google_oauth_credentials = json.loads(goacd)
+
+    assert type(google_oauth_credentials) is dict
+    if goacd is None:
+        log.error("operation=load_credentials error_message={}".format("No Credentials Found in Store"))
+        sys.exit(_SYS_EXIT_FAILED_GET_OAUTH_CREDENTIALS)
+
+    proxy_config_file = os.path.join(_app_local_directory, "proxy.conf")
+    proxy_info = None
+    h = None
+
+    utils = Utilities(app_name=_APP_NAME, session_key=session_key)
+    if os.path.isfile(proxy_config_file):
+        try:
+            pc = utils.get_proxy_configuration("gapps_proxy")
+            sptype = socks.PROXY_TYPE_HTTP
+            proxy_info = httplib2.ProxyInfo(sptype, pc["host"], int(pc["port"]),
+                                            proxy_user=pc["authentication"]["username"],
+                                            proxy_pass=pc["authentication"]["password"])
+        except Exception as e:
+            log.warn("action=load_proxy status=failed message=No_Proxy_Information stanza=gapps_proxy")
+
+    if proxy_info is not None:
+        log.info("proxy_info={0}".format(proxy_info.__dict__))
+
+    # Build HTTP session using OAuth creds
+    http = httplib2.Http(proxy_info=proxy_info)
+
+    credentials = oauth2client.client.OAuth2Credentials.from_json(json.dumps(google_oauth_credentials))
+
+    http_session = credentials.authorize(http)
+
+    return http_session
 
 def run(session_key, domain, splunk_host, auth_token, batch_size, local_domains):
 
@@ -515,9 +563,10 @@ def run(session_key, domain, splunk_host, auth_token, batch_size, local_domains)
 
     label_info = GMAIL.users().labels().get(userId='me', id='UNREAD').execute()
     log_to_hec(label_info['id'] + '=' + str(label_info['messagesUnread']))
+    log_to_hec("UNREAD={}".format(len(unread_msgs)))
 
-    # if 'messagesUnread' in unread_msgs:
-        # total_unread_count = unread_msgs['messagesUnread']
+    if 'messagesUnread' in unread_msgs:
+        total_unread_count = unread_msgs['messagesUnread']
 
     messages = []
 
@@ -532,7 +581,7 @@ def run(session_key, domain, splunk_host, auth_token, batch_size, local_domains)
         for msg in msg_list:
             m_id = msg['id'] # get id of individual message
             message_ids.append(m_id)
-        process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains)
+        process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains, batch_size, domain, _APP_NAME, session_key)
         processed_message_count += len(msg_list)
 
         log_msg = ("Processed=" + str(processed_message_count))
@@ -569,7 +618,7 @@ def run(session_key, domain, splunk_host, auth_token, batch_size, local_domains)
             m_id = msg['id'] # get id of individual message
             message_ids.append(m_id)
 
-        process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains)
+        process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains, batch_size)
 
         processed_message_count += len(msg_list)
 

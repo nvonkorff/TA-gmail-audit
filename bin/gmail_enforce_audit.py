@@ -33,7 +33,7 @@ class ModInputgmail_enforce_audit(modinput_wrapper.base_modinput.BaseModInput):
     def get_scheme(self):
         """overloaded splunklib modularinput method"""
         scheme = super(ModInputgmail_enforce_audit, self).get_scheme()
-        scheme.title = ("GMail Enforce Audit")
+        scheme.title = ("Gmail Enforce Audit")
         scheme.description = ("Go to the add-on\'s configuration UI and configure modular inputs under the Inputs menu.")
         scheme.use_external_validation = True
         scheme.streaming_mode_xml = True
@@ -47,7 +47,7 @@ class ModInputgmail_enforce_audit(modinput_wrapper.base_modinput.BaseModInput):
         For other input types, arguments should be get from input_module. Defining new input types could be easier.
         """
         scheme.add_argument(smi.Argument("audit_recipient", title="Audit Recipient",
-                                         description="A valid email address of the user that will receive audit event from monitored inboxes. This is usually the same user used to authenticate the domain in Configuration > Application Configuration",
+                                         description="A valid email address that will receive audit events from monitored inboxes in the same domain. Usually the same user used to authenticate the domain in Configuration > Application Configuration",
                                          required_on_create=True,
                                          required_on_edit=False))
         scheme.add_argument(smi.Argument("hec_token", title="HEC Token",
@@ -56,7 +56,7 @@ class ModInputgmail_enforce_audit(modinput_wrapper.base_modinput.BaseModInput):
                                          required_on_edit=False))
         scheme.add_argument(smi.Argument("hostname", title="Hostname",
                                          description="Leave this as localhost under most circumstances. Ensure you have added a HEC input on localhost.",
-                                         required_on_create=False,
+                                         required_on_create=True,
                                          required_on_edit=False))
         return scheme
 

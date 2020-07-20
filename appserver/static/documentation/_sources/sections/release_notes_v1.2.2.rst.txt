@@ -1,0 +1,16 @@
+Version 1.2.2
+-------------
+- Bug
+
+    - [ASA-245] - Chrome OS API doesn't work
+    - [ASA-248] - Timezone Python Error
+
+- New Feature
+
+    - [ASA-233] - Enrich Google Drive reporting with Drive information
+
+- Improvement
+
+    - [ASA-164] - Create CIM Fields for Google Apps for Splunk
+    - [ASA-228] - G Suite - new dashboard - Token Usage
+    - [ASA-231] - Fix Security Concern (file handlers)

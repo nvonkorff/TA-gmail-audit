@@ -1,8 +1,7 @@
-#!/usr/bin/python
 #
 # Copyright 2010 Google Inc. All Rights Reserved.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
+# Licensed under the Apache License 2.0;
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
@@ -16,9 +15,7 @@
 
 """Data model classes for the Provisioning API."""
 
-
-__author__ = 'Shraddha Gupta shraddhag@google.com>'
-
+# __author__ = 'Shraddha Gupta shraddhag@google.com>'
 
 import atom.core
 import atom.data
@@ -27,57 +24,49 @@ import gdata.data
 
 
 class Login(atom.core.XmlElement):
-
-  _qname = gdata.apps.APPS_TEMPLATE % 'login'
-  user_name = 'userName'
-  password = 'password'
-  hash_function_name = 'hashFunctionName'
-  suspended = 'suspended'
-  admin = 'admin'
-  agreed_to_terms = 'agreedToTerms'
-  change_password = 'changePasswordAtNextLogin'
-  ip_whitelisted = 'ipWhitelisted'
+    _qname = gdata.apps.APPS_TEMPLATE % 'login'
+    user_name = 'userName'
+    password = 'password'
+    hash_function_name = 'hashFunctionName'
+    suspended = 'suspended'
+    admin = 'admin'
+    agreed_to_terms = 'agreedToTerms'
+    change_password = 'changePasswordAtNextLogin'
+    ip_whitelisted = 'ipWhitelisted'
 
 
 class Name(atom.core.XmlElement):
-
-  _qname = gdata.apps.APPS_TEMPLATE % 'name'
-  given_name = 'givenName'
-  family_name = 'familyName'
+    _qname = gdata.apps.APPS_TEMPLATE % 'name'
+    given_name = 'givenName'
+    family_name = 'familyName'
 
 
 class Quota(atom.core.XmlElement):
-
-  _qname = gdata.apps.APPS_TEMPLATE % 'quota'
-  limit = 'limit'
+    _qname = gdata.apps.APPS_TEMPLATE % 'quota'
+    limit = 'limit'
 
 
 class UserEntry(gdata.data.GDEntry):
-
-  _qname = atom.data.ATOM_TEMPLATE % 'entry'
-  login = Login
-  name = Name
-  quota = Quota
+    _qname = atom.data.ATOM_TEMPLATE % 'entry'
+    login = Login
+    name = Name
+    quota = Quota
 
 
 class UserFeed(gdata.data.GDFeed):
-
-  entry = [UserEntry]
+    entry = [UserEntry]
 
 
 class Nickname(atom.core.XmlElement):
-
-  _qname = gdata.apps.APPS_TEMPLATE % 'nickname'
-  name = 'name'
+    _qname = gdata.apps.APPS_TEMPLATE % 'nickname'
+    name = 'name'
 
 
 class NicknameEntry(gdata.data.GDEntry):
-
-  _qname = atom.data.ATOM_TEMPLATE % 'entry'
-  nickname = Nickname
-  login = Login
+    _qname = atom.data.ATOM_TEMPLATE % 'entry'
+    nickname = Nickname
+    login = Login
 
 
 class NicknameFeed(gdata.data.GDFeed):
-
-  entry = [NicknameEntry]
+    entry = [NicknameEntry]

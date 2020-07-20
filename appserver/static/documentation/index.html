@@ -1,0 +1,697 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to G Suite for Splunk App’s documentation! &#8212; G Suite For Splunk 1.4.2 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="welcome-to-g-suite-for-splunk-app-s-documentation">
+<h1>Welcome to G Suite for Splunk App’s documentation!</h1>
+<div class="toctree-wrapper compound">
+</div>
+</div>
+<div class="section" id="overview">
+<h1>Overview</h1>
+<div class="section" id="about-long-name">
+<h2>About G Suite For Splunk</h2>
+<table class="colwidths-given docutils align-default" id="id3">
+<caption><span class="caption-text">About G Suite For Splunk</span></caption>
+<colgroup>
+<col style="width: 60%" />
+<col style="width: 40%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p>Author</p></td>
+<td><p>Kyle Smith</p></td>
+</tr>
+<tr class="row-even"><td><p>App Version</p></td>
+<td><p>1.4.2</p></td>
+</tr>
+<tr class="row-odd"><td><p>App Build</p></td>
+<td><p>310</p></td>
+</tr>
+<tr class="row-even"><td><p>Vendor Products</p></td>
+<td><p>G Suite utilizing OAuth2</p></td>
+</tr>
+<tr class="row-odd"><td><p>Has index-time operations</p></td>
+<td><p>true, the included TA add-on must be placed on the indexers</p></td>
+</tr>
+<tr class="row-even"><td><p>Creates an index</p></td>
+<td><p>false</p></td>
+</tr>
+<tr class="row-odd"><td><p>Implements summarization</p></td>
+<td><p>Currently, the app does not generate summaries</p></td>
+</tr>
+</tbody>
+</table>
+<p>G Suite For Splunk allows a Splunk Enterprise administrator to interface with G Suite, consuming the usage and administrative logs provided by Google. The limitations on collection times are specified: <a class="reference external" href="https://support.google.com/a/answer/7061566">https://support.google.com/a/answer/7061566</a> .</p>
+</div>
+<div class="section" id="scripts-and-binaries">
+<h2>Scripts and binaries</h2>
+<p>This App provides the following scripts:</p>
+<table class="colwidths-given docutils align-default" id="id4">
+<caption><span class="caption-text">Scripts</span></caption>
+<colgroup>
+<col style="width: 40%" />
+<col style="width: 60%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p>ga.py</p></td>
+<td><p>This python file controls the ability to interface with the Google APIs.</p></td>
+</tr>
+<tr class="row-even"><td><p>ga_authorize.py</p></td>
+<td><p>This Python custom endpoint allows the authorization of the App to G Suite For Splunk from the web UI.</p></td>
+</tr>
+<tr class="row-odd"><td><p>Diag.py</p></td>
+<td><p>Allows diag-targeted collection of information.</p></td>
+</tr>
+<tr class="row-even"><td><p>ModularInput.py</p></td>
+<td><p>Inheritable Class to create Modular Inputs</p></td>
+</tr>
+<tr class="row-odd"><td><p>Utilities.py</p></td>
+<td><p>Allows utility interactions with Splunk Endpoints</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="section" id="release-notes">
+<h1>Release notes</h1>
+<div class="section" id="version-1-4-2">
+<h2>Version 1.4.2</h2>
+<ul>
+<li><p>Improvement</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>[GSUITE-25] - Cloud App Vetting</p></li>
+<li><p>[GSUITE-26] - Fix and Update Proxy settings</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div>
+<div class="section" id="version-1-4-1">
+<h2>Version 1.4.1</h2>
+<ul class="simple">
+<li><dl class="simple">
+<dt>Test and QA</dt><dd><ul>
+<li><p>[GSUITE-23] - App inspect Failures</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Bug</dt><dd><ul>
+<li><p>[GSUITE-19] - Interval check doesn’t adjust for default.</p></li>
+<li><p>[GSUITE-20] - BigQuery not caching last row</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Improvement</dt><dd><ul>
+<li><p>[GSUITE-21] - Fix Proxy Code</p></li>
+<li><p>[GSUITE-24] - Create New Dashboards</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+<div class="section" id="version-1-4-0">
+<h2>Version 1.4.0</h2>
+<ul>
+<li><p>New Feature</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>[GSUITE-4][EXPERIMENTAL] - GMAIL LOGS and BigQuery</p></li>
+<li><p>[GSUITE-15] - Splunk 8 Compatibility</p></li>
+<li><p>[GSUITE-16] - Directory API Ingestion</p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>Improvement</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>[GSUITE-12] - Auto Discover Available Spreadsheets</p></li>
+<li><p>[GSUITE-14][Experimental] - Alert Center API</p></li>
+<li><p>Added chat, gcp, meet, jamboard to allowed Reports input.</p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div>
+<div class="section" id="about-this-release">
+<h2>About this release</h2>
+<p>Version 1.4.2 of G Suite For Splunk is compatible with:</p>
+<table class="colwidths-given docutils align-default" id="id5">
+<caption><span class="caption-text">Compatability</span></caption>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p>Splunk Enterprise versions</p></td>
+<td><p>8.0</p></td>
+</tr>
+<tr class="row-even"><td><p>Platforms</p></td>
+<td><p>Splunk Enterprise</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="section" id="known-issues">
+<h2>Known Issues</h2>
+<p>Version 1.4.2 of G Suite For Splunk has the following known issues:</p>
+<ul>
+<li><p>According to stackoverflow, there are indications that the Google Apps Admin API has an unspecified delay introduced into the events that are collected. This is most likely due to how Google collects the events and the global nature of the events. To mitigate this issue, the G Suite For Splunk Modular Input has a built-in delay in the consumption of events. If you run the modular input at 30 minutes, there will be a 30 minute delay of events. If you run at 1 hour, there will be a 1 hour delay in events.</p></li>
+<li><p>References</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="https://support.google.com/a/answer/7061566">https://support.google.com/a/answer/7061566</a></p></li>
+<li><p><a class="reference external" href="http://stackoverflow.com/questions/27389354/minimal-delay-when-listing-activities-using-the-reports-api">http://stackoverflow.com/questions/27389354/minimal-delay-when-listing-activities-using-the-reports-api</a></p></li>
+<li><p><a class="reference external" href="http://stackoverflow.com/questions/30850838/what-is-the-delay-between-a-event-happens-and-it-is-reflected-in-admin-reports-a">http://stackoverflow.com/questions/30850838/what-is-the-delay-between-a-event-happens-and-it-is-reflected-in-admin-reports-a</a></p></li>
+</ul>
+</div></blockquote>
+</li>
+<li><p>These are the currently requested scopes:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="https://www.googleapis.com/auth/admin.reports.audit.readonly">https://www.googleapis.com/auth/admin.reports.audit.readonly</a></p></li>
+<li><p><a class="reference external" href="https://www.googleapis.com/auth/admin.reports.usage.readonly">https://www.googleapis.com/auth/admin.reports.usage.readonly</a></p></li>
+<li><p><a class="reference external" href="https://www.googleapis.com/auth/analytics.readonly">https://www.googleapis.com/auth/analytics.readonly</a></p></li>
+<li><p><a class="reference external" href="https://www.googleapis.com/auth/admin.directory.user.readonly">https://www.googleapis.com/auth/admin.directory.user.readonly</a></p></li>
+<li><p><a class="reference external" href="https://www.googleapis.com/auth/admin.directory.device.chromeos.readonly">https://www.googleapis.com/auth/admin.directory.device.chromeos.readonly</a></p></li>
+<li><p><a class="reference external" href="https://www.googleapis.com/auth/drive.metadata.readonly">https://www.googleapis.com/auth/drive.metadata.readonly</a></p></li>
+</ul>
+</div></blockquote>
+</li>
+</ul>
+</div>
+</div>
+<div class="section" id="support-and-resources">
+<h1>Support and resources</h1>
+<div class="section" id="questions-and-answers">
+<h2>Questions and answers</h2>
+<p>Access questions and answers specific to G Suite For Splunk at <a class="reference external" href="https://answers.splunk.com">https://answers.splunk.com</a> . Be sure to tag your question with the App.</p>
+</div>
+<div class="section" id="support">
+<h2>Support</h2>
+<ul class="simple">
+<li><p>Support Email: <a class="reference external" href="mailto:splunkapps&#37;&#52;&#48;kyleasmith&#46;info">splunkapps<span>&#64;</span>kyleasmith<span>&#46;</span>info</a></p></li>
+<li><p>Support Offered: Community Engagement</p></li>
+</ul>
+<p>Support is available via email at <a class="reference external" href="mailto:splunkapps&#37;&#52;&#48;kyleasmith&#46;info">splunkapps<span>&#64;</span>kyleasmith<span>&#46;</span>info</a>. You can also find the author on IRC (#splunk on efnet.org) or Slack. Feel free to email or ping, most responses will be within 1-2 business days.</p>
+</div>
+</div>
+<div class="section" id="installation-and-configuration">
+<h1>Installation and Configuration</h1>
+<div class="section" id="software-requirements">
+<h2>Software requirements</h2>
+<div class="section" id="splunk-enterprise-system-requirements">
+<h3>Splunk Enterprise system requirements</h3>
+<p>Because this App runs on Splunk Enterprise, all of the [Splunk Enterprise system requirements](<a class="reference external" href="https://docs.splunk.com/Documentation/Splunk/latest/Installation/Systemrequirements">https://docs.splunk.com/Documentation/Splunk/latest/Installation/Systemrequirements</a>) apply.</p>
+</div>
+</div>
+<div class="section" id="download">
+<h2>Download</h2>
+<p>Download G Suite For Splunk at <a class="reference external" href="https://splunkbase.splunk.com">https://splunkbase.splunk.com</a>.</p>
+</div>
+<div class="section" id="installation-steps">
+<h2>Installation steps</h2>
+<p>NOTE: Where referenced, the IA-GSuiteForSplunk and TA-GSuiteForSplunk versions of this App are located on Splunkbase.</p>
+<div class="section" id="deploy-to-single-server-instance">
+<h3>Deploy to single server instance</h3>
+<p>1. Deploy as you would any App, and restart Splunk.
+1. NOTE: Only the App (or IA for no dashboards) is required. Install only 1 of the G Suite add ons or app.
+1. Configure.</p>
+</div>
+<div class="section" id="deploy-to-splunk-cloud">
+<h3>Deploy to Splunk Cloud</h3>
+<p>1. Have your Splunk Cloud Support handle this installation. Do NOT install the IA on the same system as the App.
+1. You may consider using an on-premise Heavy Forwarder to install IA-GSuiteForSplunk, and send the logs to Splunk Cloud.</p>
+</div>
+<div class="section" id="deploy-to-a-distributed-environment">
+<h3>Deploy to a Distributed Environment</h3>
+<p>1. For each Search Head in the environment, deploy a non-configured copy of the App. DO NOT SEND TA or IA to a Search Head Cluster (SHC).
+1. For each indexer in the environment, deploy a copy of the TA-GSuiteForSplunk Add-On that is located as mentioned above.
+1. For a single “Data Collection Node” OR “Heavy Forwarder” (a full instance of Splunk is required), install IA-GSuiteForSplunk and configure through the GUI.</p>
+</div>
+</div>
+</div>
+<div class="section" id="user-guide">
+<h1>User Guide</h1>
+<div class="section" id="key-concepts-for-long-name">
+<h2>Key concepts for G Suite For Splunk</h2>
+<ul class="simple">
+<li><p>You must have enabled the G Suite APIs at <a class="reference external" href="https://console.developers.google.com">https://console.developers.google.com</a></p></li>
+<li><p>You must have configured a credential for use with this App at <a class="reference external" href="https://console.developers.google.com">https://console.developers.google.com</a>.</p></li>
+<li><p>You must AUTHORIZE this app to make requests into G Suite APIs.</p></li>
+<li><p>Scopes Defined are here: <a class="reference external" href="https://developers.google.com/identity/protocols/googlescopes">https://developers.google.com/identity/protocols/googlescopes</a></p></li>
+</ul>
+</div>
+<div class="section" id="configure-long-name-for-use-with-g-suite-admin-reporting">
+<h2>Configure G Suite For Splunk for use with G Suite Admin Reporting.</h2>
+<p>Requires: <code class="docutils literal notranslate"><span class="pre">Admin</span> <span class="pre">SDK</span> <span class="pre">API</span></code>, and <code class="docutils literal notranslate"><span class="pre">Google</span> <span class="pre">Drive</span> <span class="pre">API</span></code>
+Optional: <code class="docutils literal notranslate"><span class="pre">Google</span> <span class="pre">Analytics</span> <span class="pre">Reporting</span> <span class="pre">API</span></code>
+Each API endpoint has individual APIs that need to be enabled within <a class="reference external" href="https://console.developers.google.com">https://console.developers.google.com</a>.</p>
+<ol class="arabic simple">
+<li><dl class="simple">
+<dt><cite>report:[all, gcp, chat, meet, jamboard, access_transparency, groups_enterprise, user_accounts, groups, mobile, admin, calendar, drive, login, token, rules]</cite></dt><dd><ol class="arabic simple">
+<li><p>These input service names require the <em>Admin SDK API</em> enabled.</p></li>
+<li><p>Additionally, the “drive” report requires the <em>Google Drive API</em> enabled.</p></li>
+<li><p>These inputs generally do not require “Extra Configuration” options in the Modular Input. An empty <cite>{}</cite> is still needed where advanced features are not.</p></li>
+<li><p>These inputs should be adjusted per Google guidelines for the different activities.</p></li>
+<li><p>By default, the Modular Input will only pull the previous 24 hours of data to prevent memory overflows.</p></li>
+</ol>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><cite>analytics:[metadata, report]</cite></dt><dd><ol class="arabic simple">
+<li><p>These input service names require the “<em>Analytics Reporting API v4</em>” and “<em>Analytics API</em>” APIs enabled.</p></li>
+<li><p>These inputs do require “Extra Configuration”. These inputs should not be enabled lightly, and require a little bit of prior research and planning.</p></li>
+<li><p>IF YOU DON’T KNOW WHAT THIS IS, DO NOT ENABLE IT</p></li>
+<li><p>THIS IS A DARK FEATURE.</p></li>
+</ol>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><cite>usage:[customer, user, chrome]</cite></dt><dd><ol class="arabic simple">
+<li><p>These input service names require the same as the report services.</p></li>
+<li><dl class="simple">
+<dt>These inputs can have extra configuration, namely <cite>historical_days</cite> to do the initial data ingestion.</dt><dd><ol class="arabic simple">
+<li><p>When configuring the modular input, use the “Extra Configuration” option of <cite>{“historical_days”: 180}</cite></p></li>
+</ol>
+</dd>
+</dl>
+</li>
+<li><p>IMPORTANT: BE CAREFUL WITH USER REPORTING. If you ingest 365 days of data (back fill the information), you will end up with <cite>365 * # of users</cite> events to pull and could cause a Splunk/System failure.</p></li>
+<li><p>If you see a <cite>404 Error</cite> in the logs relating to the usage reports, THESE ARE NORMAL.</p></li>
+<li><p>The Customer Usage <em>should</em> include classrooms usage by default.</p></li>
+</ol>
+</dd>
+</dl>
+</li>
+</ol>
+</div>
+<div class="section" id="configure-long-name-for-use-with-google-spreadsheets">
+<h2>Configure G Suite For Splunk for use with Google Spreadsheets</h2>
+<p>Requires: <code class="docutils literal notranslate"><span class="pre">Google</span> <span class="pre">Sheets</span> <span class="pre">API</span></code></p>
+<ol class="arabic simple">
+<li><p>When setting up the modular input, make sure you grab the Spreadsheet ID from the URL of the spreadsheet you need. Auto-discovery of available spreadsheets is not available (but an ER is in for it).</p></li>
+</ol>
+<div class="section" id="spreadsheet-destinations">
+<h3>Spreadsheet Destinations</h3>
+<ol class="arabic simple">
+<li><dl class="simple">
+<dt>Index</dt><dd><ol class="arabic simple">
+<li><p>Takes the information from the sheet and indexes it to the specified index. This is useful to get lookups from a Heavy Forwarder to a Search head.</p></li>
+<li><p>Use the provided Dashboard to re-assemble via saved scheduled search.</p></li>
+</ol>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>KVStore</dt><dd><ol class="arabic simple">
+<li><p>Takes the information from the sheet and places it into a KVStore collection.</p></li>
+<li><p>It will create the needed collections and transforms if needed.</p></li>
+<li><p>Order of the COLUMNS <code class="docutils literal notranslate"><span class="pre">is</span> <span class="pre">NOT</span></code> kept, and the KVStore will be sorted via ASCII sort based on the column name.</p></li>
+</ol>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Ordered KVStore</dt><dd><ol class="arabic simple">
+<li><p>Takes the information from the sheet and places it into a KVStore collection.</p></li>
+<li><p>It will create the needed collections and transforms if needed.</p></li>
+<li><p>Order of the COLUMNS <code class="docutils literal notranslate"><span class="pre">IS</span></code> kept, the column names are stored in <code class="docutils literal notranslate"><span class="pre">ROW</span> <span class="pre">0</span></code></p></li>
+</ol>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>CSV Lookup</dt><dd><ol class="arabic simple">
+<li><p>Takes the information from the sheet and places it into a CSV based lookup.</p></li>
+<li><p>It will create the needed transforms if needed.</p></li>
+<li><p>Order of the COLUMNS <code class="docutils literal notranslate"><span class="pre">is</span> <span class="pre">NOT</span></code> kept, and the CSV lookup will be sorted via ASCII sort based on the column name.</p></li>
+</ol>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt>Ordered CSV Lookup</dt><dd><ol class="arabic simple">
+<li><p>Takes the information from the sheet and places it into a CSV based lookup.</p></li>
+<li><p>It will create the needed transforms if needed.</p></li>
+<li><p>Order of the COLUMNS <code class="docutils literal notranslate"><span class="pre">IS</span></code> kept, the column names are stored in <code class="docutils literal notranslate"><span class="pre">ROW</span> <span class="pre">0</span></code>.</p></li>
+</ol>
+</dd>
+</dl>
+</li>
+</ol>
+</div>
+</div>
+<div class="section" id="configure-long-name-for-use-with-google-bigquery">
+<h2>Configure G Suite For Splunk for use with Google BigQuery</h2>
+<p>Requires: <code class="docutils literal notranslate"><span class="pre">`BigQuery</span> <span class="pre">API</span></code></p>
+<p>NOTE: This is EXPERIMENTAL. Enjoy breaking the input. This section to be updated when working correctly.
+NOTE: DOES NOT CURRENTLY WORK WITH PROXIES
+NOTE: To consume <em>all</em> tables in a dataset, use the table name “<em>all</em>”</p>
+<div class="section" id="requirements">
+<h3>Requirements</h3>
+<ol class="arabic simple">
+<li><p>Service Account JSON File from GCP. (<a class="reference external" href="https://console.developers.google.com/iam-admin/serviceaccounts">https://console.developers.google.com/iam-admin/serviceaccounts</a>)</p></li>
+<li><p>Create a new Splunk credential with Realm: <cite>gsuite_bigquery</cite> and username is <cite>&lt;your_domain&gt;</cite> (your domain as configured in the input)</p></li>
+<li><p>The password for that credential is the <em>ENTIRE</em> <em>ON ONE LINE</em> JSON file from GCP for the service account.</p></li>
+</ol>
+</div>
+</div>
+<div class="section" id="id1">
+<h2>Configure G Suite For Splunk for use with G Suite Admin Reporting</h2>
+<p>Requires: <code class="docutils literal notranslate"><span class="pre">G</span> <span class="pre">Suite</span> <span class="pre">Alert</span> <span class="pre">Center</span> <span class="pre">API</span></code>
+Note: <code class="docutils literal notranslate"><span class="pre">EXPERIMENTAL</span></code> (scope not valid)
+#. <cite>alerts:[all, takeout, gmail, identity, operations, state, mobile]</cite></p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>These inputs generally do not require “Extra Configuration” options in the Modular Input. An empty <cite>{}</cite> is still needed where advanced features are not.</p></li>
+<li><p>By default, the Modular Input will only pull the previous 24 hours of data to prevent memory overflows.</p></li>
+<li><p>Uses the <code class="docutils literal notranslate"><span class="pre">https://www.googleapis.com/auth/apps.alerts</span></code> scope.</p></li>
+<li><p>View more information at <a class="reference external" href="https://developers.google.com/admin-sdk/alertcenter/reference/alert-types">https://developers.google.com/admin-sdk/alertcenter/reference/alert-types</a> .</p></li>
+</ol>
+</div></blockquote>
+</div>
+<div class="section" id="notes">
+<h2>Notes</h2>
+<p><cite>IMPORTANT</cite>: You must Authorize the APIS with the SAME USER that allowed access to the APIs in the developer console (for GSuite customers - GCP see below).</p>
+<p>Overview of authorization procedures are found here: <a class="reference external" href="https://developers.google.com/identity/protocols/OAuth2ServiceAccount#overview">https://developers.google.com/identity/protocols/OAuth2ServiceAccount#overview</a>.</p>
+<p><cite>GCP Users</cite>: It has been tested to use an Credential generated in the GCP console (same credential type as outlined on the OAuth App Config page). You can use an authorized admin to “Approve” the OAuth Scopes. It is <cite>unknown</cite> what happens when the approving Admin user account is disabled.</p>
+</div>
+<div class="section" id="modular-input">
+<h2>Modular Input</h2>
+<p><strong>NOTE:</strong> You will need to configure a new modular input for each domain</p>
+<ol class="arabic simple">
+<li><p>Follow the steps on the <cite>Application Configuration</cite> dashboard to configure the modular input.</p></li>
+</ol>
+<p><strong>NOTE:</strong> After testing in a much bigger environment, we’ve been able to set these recommendations for intervals. You will need 4 modular input definitions.</p>
+<ol class="arabic simple">
+<li><p>calendar, token, mobile, groups, login, saml, Chrome OS Devices
+#. These are done at an cron interval of <cite>15 */4 * * *</cite></p></li>
+<li><p>drive
+#. Drive is done at a seconds interval of <cite>600</cite> - <cite>1200</cite> depending on organization size, and traffic flow of drive operations.</p></li>
+<li><p>Usage - User, Customer
+#. These are done at a seconds interval of <cite>86400</cite></p></li>
+<li><p>admin, rules, chat, gplus
+#. These are done at a seconds interval of <cite>600</cite></p></li>
+</ol>
+</div>
+<div class="section" id="indexes">
+<h2>Indexes</h2>
+<p>By default all events will be written to the “main” index. You should change the index in the configuration files to match your specific index.</p>
+</div>
+<div class="section" id="configure-proxy-support">
+<h2>Configure Proxy Support</h2>
+<p>This App Supports proxy configuration. Configure the proxy first in the <cite>Application Configuration</cite> dashboard, and then choose it during the modular input configuration. The proxy <cite>name</cite> MUST BE <cite>gapps_proxy</cite> for the authorization to work correctly.</p>
+</div>
+<div class="section" id="troubleshoot-long-name">
+<h2>Troubleshoot G Suite For Splunk</h2>
+<ol class="arabic simple">
+<li><p>Check the Monitoring Console (<cite>&gt;=v6.5</cite>) for errors</p></li>
+<li><p>Visit the <cite>Application Health</cite> dashboard</p></li>
+<li><p>Search for <cite>eventtype=googleapps_error</cite></p></li>
+</ol>
+</div>
+<div class="section" id="cim">
+<h2>CIM</h2>
+<p>As of v1.4.0 of this app, we should support version <cite>4.15</cite> of the CIM.</p>
+</div>
+<div class="section" id="experimental">
+<h2>EXPERIMENTAL</h2>
+<p>There are portions of this app that are experimental, or you might see “odd” code. This is for some up coming features, might work, might not.</p>
+</div>
+<div class="section" id="lookups">
+<h2>Lookups</h2>
+<p>G Suite For Splunk contains the following lookup files:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">gsuite_labels.csv</span></code> : This allows “pretty” labels on select dashboards.</p></li>
+</ol>
+</div>
+<div class="section" id="event-generator">
+<h2>Event Generator</h2>
+<p>G Suite For Splunk does not make use of an event generator. This allows the product to display data, when there are no inputs configured.</p>
+</div>
+<div class="section" id="acceleration">
+<h2>Acceleration</h2>
+<ol class="arabic simple">
+<li><p>Summary Indexing: No</p></li>
+<li><p>Data Model Acceleration: No</p></li>
+<li><p>Report Acceleration: No</p></li>
+</ol>
+</div>
+<div class="section" id="binary-file-declaration">
+<h2>Binary File Declaration</h2>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">bin/google/protobuf/internal/_api_implementation.so</span></code> is apparently a binary file. Required for Google Things.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bin/google/protobuf/internal/_message.so</span></code> is apparently a binary file. Required for Google Things.</p></li>
+</ol>
+<p>For these two, please see <a class="reference external" href="https://github.com/protocolbuffers/protobuf/tree/3.6.x/python/google/protobuf/internal">https://github.com/protocolbuffers/protobuf/tree/3.6.x/python/google/protobuf/internal</a> for source and attribution.</p>
+</div>
+</div>
+<div class="section" id="third-party-notices">
+<h1>Third Party Notices</h1>
+<p>Version 1.4.2 of G Suite For Splunk incorporates the following Third-party software or third-party services.</p>
+<div class="section" id="google-apps-apis">
+<h2>Google Apps APIs</h2>
+<p>Please visit <a class="reference external" href="https://developers.google.com/google-apps/">https://developers.google.com/google-apps/</a> for full terms and conditions.</p>
+</div>
+<div class="section" id="aplura-llc-components">
+<h2>Aplura, LLC Components</h2>
+<p>Components Written by Aplura, LLC
+Copyright (C) 2016-2017 Aplura, ,LLC</p>
+<p>This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.</p>
+<p>This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.</p>
+<p>You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, eMA  02110-1301, USA.</p>
+</div>
+<div class="section" id="defusedxml">
+<h2>defusedxml</h2>
+</div>
+<div class="section" id="id2">
+<h2>defusedxml</h2>
+<p>PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2</p>
+<p>1. This LICENSE AGREEMENT is between the Python Software Foundation
+(“PSF”), and the Individual or Organization (“Licensee”) accessing and
+otherwise using this software (“Python”) in source or binary form and
+its associated documentation.</p>
+<p>2. Subject to the terms and conditions of this License Agreement, PSF
+hereby grants Licensee a nonexclusive, royalty-free, world-wide
+license to reproduce, analyze, test, perform and/or display publicly,
+prepare derivative works, distribute, and otherwise use Python
+alone or in any derivative version, provided, however, that PSF’s
+License Agreement and PSF’s notice of copyright, i.e., “Copyright (c)
+2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008 Python Software Foundation;
+All Rights Reserved” are retained in Python alone or in any derivative
+version prepared by Licensee.</p>
+<p>3. In the event Licensee prepares a derivative work that is based on
+or incorporates Python or any part thereof, and wants to make
+the derivative work available to others as provided herein, then
+Licensee hereby agrees to include in any such work a brief summary of
+the changes made to Python.</p>
+<p>4. PSF is making Python available to Licensee on an “AS IS”
+basis.  PSF MAKES NO REPRESENTATIONS OR WARRANTIES, EXPRESS OR
+IMPLIED.  BY WAY OF EXAMPLE, BUT NOT LIMITATION, PSF MAKES NO AND
+DISCLAIMS ANY REPRESENTATION OR WARRANTY OF MERCHANTABILITY OR FITNESS
+FOR ANY PARTICULAR PURPOSE OR THAT THE USE OF PYTHON WILL NOT
+INFRINGE ANY THIRD PARTY RIGHTS.</p>
+<p>5. PSF SHALL NOT BE LIABLE TO LICENSEE OR ANY OTHER USERS OF PYTHON
+FOR ANY INCIDENTAL, SPECIAL, OR CONSEQUENTIAL DAMAGES OR LOSS AS
+A RESULT OF MODIFYING, DISTRIBUTING, OR OTHERWISE USING PYTHON,
+OR ANY DERIVATIVE THEREOF, EVEN IF ADVISED OF THE POSSIBILITY THEREOF.</p>
+<p>6. This License Agreement will automatically terminate upon a material
+breach of its terms and conditions.</p>
+<p>7. Nothing in this License Agreement shall be deemed to create any
+relationship of agency, partnership, or joint venture between PSF and
+Licensee.  This License Agreement does not grant permission to use PSF
+trademarks or trade name in a trademark sense to endorse or promote
+products or services of Licensee, or any third party.</p>
+<p>8. By copying, installing or otherwise using Python, Licensee
+agrees to be bound by the terms and conditions of this License
+Agreement.</p>
+</div>
+<div class="section" id="markdown-js">
+<h2>markdown.js</h2>
+<p>Released under the MIT license.</p>
+<p>Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the “Software”), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:</p>
+<p>The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.</p>
+<p>THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+</div>
+<div class="section" id="jquery-js">
+<h2>jquery.js</h2>
+<p><a class="reference external" href="https://github.com/jquery/jquery/blob/master/LICENSE.txt">https://github.com/jquery/jquery/blob/master/LICENSE.txt</a></p>
+<p>Copyright JS Foundation and other contributors, <a class="reference external" href="https://js.foundation/">https://js.foundation/</a></p>
+<p>This software consists of voluntary contributions made by many
+individuals. For exact contribution history, see the revision history
+available at <a class="reference external" href="https://github.com/jquery/jquery">https://github.com/jquery/jquery</a></p>
+<p>The following license applies to all parts of this software except as
+documented below:</p>
+<hr class="docutils" />
+<p>Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+“Software”), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:</p>
+<p>The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.</p>
+<p>THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
+WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.</p>
+<hr class="docutils" />
+<p>All files located in the node_modules and external directories are
+externally maintained libraries used by this software which have their
+own licenses; we recommend you read them, as their terms may differ from
+the terms above.</p>
+</div>
+<div class="section" id="d3-js">
+<h2>d3.js</h2>
+<p><a class="reference external" href="https://github.com/d3/d3/blob/master/LICENSE">https://github.com/d3/d3/blob/master/LICENSE</a></p>
+<p>Copyright 2010-2016 Mike Bostock
+All rights reserved.</p>
+<p>Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:</p>
+<ul class="simple">
+<li><p>Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.</p></li>
+<li><p>Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation
+and/or other materials provided with the distribution.</p></li>
+<li><p>Neither the name of the author nor the names of contributors may be used to
+endorse or promote products derived from this software without specific prior
+written permission.</p></li>
+</ul>
+<p>THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS” AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.</p>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="#">G Suite For Splunk</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="#">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, alacercogitatus.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.1.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/index.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -1,0 +1,15 @@
+Version 1.4.0
+-------------
+
+- New Feature 
+
+    - [GSUITE-4][EXPERIMENTAL] - GMAIL LOGS and BigQuery
+    - [GSUITE-15] - Splunk 8 Compatibility
+    - [GSUITE-16] - Directory API Ingestion
+
+- Improvement
+
+    - [GSUITE-12] - Auto Discover Available Spreadsheets
+    - [GSUITE-14][Experimental] - Alert Center API
+    - Added chat, gcp, meet, jamboard to allowed Reports input.
+

@@ -1,0 +1,18 @@
+Version 1.2.1
+-------------
+
+NOTE: THIS IS A BREAKING VERSION. YOU MUST REAUTHORIZE THE CLIENT BEFORE THE APP WILL POPULATE DATA.
+
+- Bug
+
+    - [ASA-218] - Fix the Extra Config not validating on empty object
+
+
+- New Feature
+
+    - [ASA-216] - Update GSuite to store json credentials in encrypted store.
+
+- Improvement
+
+    - [ASA-211] - Fix Timezone Translation
+    - [ASA-217] -  Add additional data feed

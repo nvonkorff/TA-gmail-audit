@@ -15,8 +15,8 @@ import splunk.appserver.mrsparkle.lib.util as util
 import sys
 import threading
 import time
-from Utilities import KennyLoggins, Utilities
-from Utilities import Utilities
+from gmail_Utilities import KennyLoggins, Utilities
+from gmail_Utilities import Utilities
 from apiclient import errors
 from apiclient.discovery import build
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -78,7 +78,7 @@ def send_to_splunk(splunk_host, auth_token, payload, sourcetype, eventtime):
       request_url = "https://%s:8088/services/collector" % splunk_host
 
       # Encode data in JSON utf-8 format
-      post_data = json.dumps(post_data).encode('utf8')
+      post_data = json.dumps(post_data).encode('utf-8')
 
       # Encode data in JSON utf-8 format
       # data = json.dumps(post_data)
@@ -129,63 +129,104 @@ def log_to_hec(log_msg):
     payload = { "log": log_msg }
     send_to_splunk(splunk_host, auth_token, payload, sourcetype, eventtime)
 
+def get_audit_config_user(audit_user_name, AuditUser_domain, access_token):
+
+    data = []
+    count = 0
+    total = 0
+    start = 0
+    next_page = True
+
+    url = "https://apps-apis.google.com/a/feeds/compliance/audit/mail/monitor/{}/{}".format(AuditUser_domain, audit_user_name)
+
+    headers = {"Authorization": "Bearer {}".format(access_token)}
+    # log_to_hec("url={}".format(url))
+    # log_to_hec("headers={}".format(headers))
+    try:
+        r = requests.get(url, headers=headers)
+    except requests.exceptions.RequestException:
+       log_to_hec('HTTP Request failed')
+       return
+
+    # json_response = json.loads(r.text)
+
+    # for entry in json_response["data"]:
+        # log_to_hec("Entry={}".format(entry))
+        # data.append(entry)
+
+    data = r.text
+
+    return data
+
+def set_audit_config_user(AuditUser_domain, audit_user_name, audit_recipient_name, end_date, access_token):
+
+    data = []
+    count = 0
+    total = 0
+    start = 0
+    next_page = True
+
+    url = "https://apps-apis.google.com/a/feeds/compliance/audit/mail/monitor/{}/{}".format(AuditUser_domain, audit_user_name)
+    xml = """<atom:entry xmlns:atom='http://www.w3.org/2005/Atom' xmlns:apps='http://schemas.google.com/apps/2006'>
+   <apps:property name='destUserName' value="{}"/>
+   <apps:property name='endDate' value="{}"/>
+   <apps:property name='incomingEmailMonitorLevel' value='FULL_MESSAGE'/>
+   <apps:property name='outgoingEmailMonitorLevel' value='FULL_MESSAGE'/>
+</atom:entry>
+""".format(audit_recipient_name, end_date)
+
+    headers = {"Authorization": "Bearer {}".format(access_token)
+             , "Content-type": "application/atom+xml"}
+
+    # log_to_hec("url={}".format(url))
+    # log_to_hec("headers={}".format(headers))
+    # log_to_hec("xml={}".format(xml))
+    try:
+        r = requests.post(url, headers=headers, data=xml)
+    except requests.exceptions.RequestException:
+       log_to_hec('HTTP Request failed')
+       return
+
+    # json_response = json.loads(r.text)
+
+    # for entry in json_response["data"]:
+        # log_to_hec("Entry={}".format(entry))
+        # data.append(entry)
+
+    data = r.text
+
+    return data
+
+
 def enable_audit(AuditUser, AuditUser_domain, AuditRecipient, AuditRecipient_domain, gd_client, access_token, expires_in):
 
     log_to_hec("AuditUser_domain = " + AuditUser_domain)
     log_to_hec("AuditRecipient_domain = " + AuditRecipient_domain)
-
-    if expires_in <= 60:
-       print("Refreshing auth token")
-       access_token, expires_in, service = refresh_auth_token()
-       print("Auth token expires within: " + str(expires_in) + " seconds.")
-
-       gd_client = gdata.apps.audit.service.AuditService(domain=AuditRecipient.split('@')[1])
-       gd_client.additional_headers[u'Authorization'] = u'Bearer {0}'.format(access_token)
 
     if AuditUser_domain != AuditRecipient_domain:
         log_to_hec(AuditUser_domain + " is a different domain to audit recipient domain: " + AuditRecipient_domain + " - switching gd_client settings")
         gd_client = gdata.apps.audit.service.AuditService(domain=AuditUser.split('@')[1])
         gd_client.additional_headers[u'Authorization'] = u'Bearer {0}'.format(access_token)
 
-    for n in range(0, 5):
-        try:
-            monitors = gd_client.getEmailMonitors( AuditUser.split('@')[0] )
-        except Exception as err:
-            if err[0]['status'] == 400:
-                log_to_hec(str(datetime.now()) + " - Error: Could not list monitors for " + AuditUser + " - " + str(err))
-                return
-            if err[0]['status'] == 503:
-                log_to_hec(str(datetime.now()) + " - Error: Could not list monitors for " + AuditUser + " - " + str(err))
-                return
-            else:
-                log_to_hec(str(datetime.now()) + " - Error: Could not list monitors for " + AuditUser + " - " + str(err))
-                log_to_hec(str(datetime.now()) + " - Retry list monitoring attempt: " + str(n) + " for "  + AuditUser)
-                time.sleep((2 ** n))
+    audit_user_name = AuditUser.split('@')[0]
+    audit_recipient_name = AuditRecipient.split('@')[0]
+    end_date = '2118-11-21 00:00'
 
+    try:
+        monitors = gd_client.getEmailMonitors(user=audit_user_name)
+    except Exception as err:
+        log_to_hec("Error: Could not list monitors for {} - Error={}".format(AuditUser, err))
+        return
 
+    log_to_hec("User={} Monitors={}".format(AuditUser, monitors))
     if not monitors or monitors['outgoingEmailMonitorLevel'] == 'HEADER_ONLY':
         try:
-            monitors = gd_client.createEmailMonitor( AuditUser.split('@')[0],
-                                                     AuditRecipient.split('@')[0],
-                                                     end_date='2118-11-21 00:00',
-                                                     incoming_headers_only=False,
-                                                     outgoing_headers_only=False,
-                                                     drafts=False,
-                                                     chats=False)
+            monitors = set_audit_config_user(AuditUser_domain, audit_user_name, audit_recipient_name, end_date, access_token)
 
         except Exception as err:
-            if err[0]['status'] == 400:
-                log_to_hec(str(datetime.now()) + " - Error: Could not list monitors for " + AuditUser + " - " + str(err))
-                return
-            if err[0]['status'] == 503:
-                log_to_hec(str(datetime.now()) + " - Error: Could not list monitors for " + AuditUser + " - " + str(err))
-                return
-            else:
-                log_to_hec(str(datetime.now()) + " - Error: Could not enable monitoring for " + AuditUser + " - " + str(err))
-                log_to_hec(str(datetime.now()) + " - Retry enable monitoring attempt: " + str(n) + " for "  + AuditUser + " - " + str(err))
-                time.sleep((2 ** n))
+            log_to_hec("Error: Could not create monitors for {} - Error={}".format(AuditUser, err))
 
-    log_to_hec(str(datetime.now()) + " - User:" + AuditUser + " Monitors: " + str(monitors))
+    log_to_hec("User={} Monitors={}".format(AuditUser, monitors))
     return
 
 def validate_input(helper, definition):
@@ -216,7 +257,7 @@ def refresh_auth_token(domain, app_name, session_key):
     utils = Utilities(app_name=app_name, session_key=session_key)
 
     log.info("action=getting_credentials domain={}".format(domain))
-    goacd = utils.get_credential(app_name, domain)
+    goacd = utils.get_creds_splunk_client(app_name, domain)
     log.info("action=getting_credentials domain={} goacd_type={}".format(domain, type(goacd)))
     google_oauth_credentials = json.loads(goacd)
 
@@ -237,7 +278,7 @@ def refresh_auth_token(domain, app_name, session_key):
             proxy_info = httplib2.ProxyInfo(sptype, pc["host"], int(pc["port"]),
                                             proxy_user=pc["authentication"]["username"],
                                             proxy_pass=pc["authentication"]["password"])
-        except Exception, e:
+        except Exception as e:
             log.warn("action=load_proxy status=failed message=No_Proxy_Information stanza=gapps_proxy")
 
     if proxy_info is not None:
@@ -268,14 +309,16 @@ def run(session_key, domain, splunk_host, auth_token, audit_recipient):
     access_token, expires_in, service = refresh_auth_token(domain, _APP_NAME, session_key)
 
     script = sys.argv[0]
-    log_to_hec("Starting: " + script)
+    log_to_hec("Starting: {}".format(script))
 
     max_threads = 10
 
-    log_to_hec("Auth token expires within: " + str(expires_in) + " seconds.")
+    log_to_hec("Auth token expires in {} seconds".format(expires_in))
 
     gd_client = gdata.apps.audit.service.AuditService(domain=AuditRecipient.split('@')[1])
     gd_client.additional_headers[u'Authorization'] = u'Bearer {0}'.format(access_token)
+    # auth_headers = {u'Authorization': u'Bearer %s' % access_token}
+    # gd_client.additional_headers = auth_headers
 
     # Call the Admin SDK Directory API
     log_to_hec('Getting the users in the domain')
@@ -309,28 +352,31 @@ def run(session_key, domain, splunk_host, auth_token, audit_recipient):
             for user in ulist:
 
                 if expires_in <= 60:
+
                    log_to_hec("Refreshing auth token")
-                   access_token, expires_in, service = refresh_auth_token()
-                   log_to_hec("Auth token expires within: " + str(expires_in) + " seconds.")
+                   access_token, expires_in, service = refresh_auth_token(domain, _APP_NAME, session_key)
+                   log_to_hec("Auth token expires in {} seconds".format(expires_in))
 
                    gd_client = gdata.apps.audit.service.AuditService(domain=AuditRecipient.split('@')[1])
                    gd_client.additional_headers[u'Authorization'] = u'Bearer {0}'.format(access_token)
+                   # auth_headers = {u'Authorization': u'Bearer %s' % access_token}
+                   # gd_client.additional_headers = auth_headers
 
                 if user['primaryEmail'] == AuditRecipient:
                     continue
 
                 if user['isMailboxSetup'] == False:
-                    log_to_hec("Mailbox is not configured. Cannot enable auditing on: " + user['primaryEmail'])
+                    log_to_hec("Mailbox is not configured. Cannot enable auditing on: {}".format(user['primaryEmail']))
                     continue
 
                 AuditUser = user['primaryEmail']
-                log_to_hec("User:" + user['primaryEmail'] + " " + user['name']['fullName'])
+                log_to_hec("User: {} {}".format(user['primaryEmail'], user['name']['fullName']))
 
                 AuditUser_domain = AuditUser.split('@')[1]
 
                 futures = executor.submit(enable_audit, AuditUser, AuditUser_domain, AuditRecipient, AuditRecipient_domain, gd_client, access_token, expires_in)
 
     script = sys.argv[0]
-    log_to_hec("Finished: " + script)
+    log_to_hec("Finished: {}".format(script))
 
     return

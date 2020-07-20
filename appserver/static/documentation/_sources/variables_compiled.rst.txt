@@ -1,0 +1,7 @@
+.. |long_name| replace:: G Suite For Splunk
+.. |version| replace:: 1.4.2
+.. |build| replace:: 310
+.. |splunk_versions| replace:: 8.0
+.. |splunkbase_url| replace:: https://splunkbase.splunk.com
+.. |ta_name| replace:: TA-GSuiteForSplunk
+.. |ia_name| replace:: IA-GSuiteForSplunk

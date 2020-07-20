@@ -1,0 +1,7 @@
+Version 1.4.2
+-------------
+
+- Improvement
+
+    - [GSUITE-25] - Cloud App Vetting
+    - [GSUITE-26] - Fix and Update Proxy settings

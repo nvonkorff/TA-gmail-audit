@@ -1,0 +1,16 @@
+This App provides the following scripts:
+
+.. list-table:: Scripts
+    :widths: 10 15
+    :header-rows: 0
+
+    * - ga.py
+      - This python file controls the ability to interface with the Google APIs.
+    * - ga_authorize.py
+      - This Python custom endpoint allows the authorization of the App to |long_name| from the web UI.
+    * - Diag.py
+      - Allows diag-targeted collection of information.
+    * - ModularInput.py
+      - Inheritable Class to create Modular Inputs
+    * - Utilities.py
+      - Allows utility interactions with Splunk Endpoints

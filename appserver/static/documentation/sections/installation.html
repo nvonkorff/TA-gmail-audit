@@ -1,0 +1,130 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Software requirements &#8212; G Suite For Splunk 1.4.2 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="software-requirements">
+<h1>Software requirements</h1>
+<div class="section" id="splunk-enterprise-system-requirements">
+<h2>Splunk Enterprise system requirements</h2>
+<p>Because this App runs on Splunk Enterprise, all of the [Splunk Enterprise system requirements](<a class="reference external" href="https://docs.splunk.com/Documentation/Splunk/latest/Installation/Systemrequirements">https://docs.splunk.com/Documentation/Splunk/latest/Installation/Systemrequirements</a>) apply.</p>
+</div>
+</div>
+<div class="section" id="download">
+<h1>Download</h1>
+<p>Download <a href="#id1"><span class="problematic" id="id2">|long_name|</span></a> at <a href="#id3"><span class="problematic" id="id4">|splunkbase_url|</span></a>.</p>
+</div>
+<div class="section" id="installation-steps">
+<h1>Installation steps</h1>
+<p>NOTE: Where referenced, the <a href="#id5"><span class="problematic" id="id6">|ia_name|</span></a> and <a href="#id7"><span class="problematic" id="id8">|ta_name|</span></a> versions of this App are located on Splunkbase.</p>
+<div class="section" id="deploy-to-single-server-instance">
+<h2>Deploy to single server instance</h2>
+<p>1. Deploy as you would any App, and restart Splunk.
+1. NOTE: Only the App (or IA for no dashboards) is required. Install only 1 of the G Suite add ons or app.
+1. Configure.</p>
+</div>
+<div class="section" id="deploy-to-splunk-cloud">
+<h2>Deploy to Splunk Cloud</h2>
+<p>1. Have your Splunk Cloud Support handle this installation. Do NOT install the IA on the same system as the App.
+1. You may consider using an on-premise Heavy Forwarder to install <a href="#id9"><span class="problematic" id="id10">|ia_name|</span></a>, and send the logs to Splunk Cloud.</p>
+</div>
+<div class="section" id="deploy-to-a-distributed-environment">
+<h2>Deploy to a Distributed Environment</h2>
+<p>1. For each Search Head in the environment, deploy a non-configured copy of the App. DO NOT SEND TA or IA to a Search Head Cluster (SHC).
+1. For each indexer in the environment, deploy a copy of the <a href="#id11"><span class="problematic" id="id12">|ta_name|</span></a> Add-On that is located as mentioned above.
+1. For a single “Data Collection Node” OR “Heavy Forwarder” (a full instance of Splunk is required), install <a href="#id13"><span class="problematic" id="id14">|ia_name|</span></a> and configure through the GUI.</p>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">G Suite For Splunk</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2017, alacercogitatus.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.1.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/sections/installation.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
