@@ -66,6 +66,10 @@ class ModInputgmail_retrieve_audit_data(modinput_wrapper.base_modinput.BaseModIn
                                          description="Comma separated list of \"local\" domains. This is to allow the script to differentiate inbound, outbound and internal communications.",
                                          required_on_create=True,
                                          required_on_edit=False))
+        scheme.add_argument(smi.Argument("include_body", title="Include domains",
+                                         description="Include email body along with email headers.",
+                                         required_on_create=True,
+                                         required_on_edit=False))
         return scheme
 
     def get_app_name(self):
