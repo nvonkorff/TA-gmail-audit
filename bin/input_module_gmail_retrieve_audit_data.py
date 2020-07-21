@@ -204,7 +204,6 @@ def mark_as_read(m_id, user_id, GMAIL, http_session):
 def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains, include_body, domain, _APP_NAME, session_key):
  
     log_to_hec("Processing message_id={}".format(m_id)) 
-    log_to_hec("include_body={}".format(include_body))
 
     # Random sleep time to reduce api rate limiting
     sec = randrange(2) 
@@ -223,7 +222,6 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
         log_to_hec("Error: Could not get message_id={} - {}".format(m_id, err))
         return
 
-    log_to_hec("Step={}".format("1"))
     message = json.loads(message)
 
     if 'error' in message:
@@ -241,7 +239,6 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
             log_to_hec("key=" + str(key) + " value=" + str(value))
         return
 
-    log_to_hec("Step={}".format("2"))
     body = ""
 
     if b.is_multipart():
@@ -274,7 +271,6 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
 
     body_data[m_id] = cleaned_body
 
-    log_to_hec("Step={}".format("3"))
 
     try:
         message = json.dumps(GMAIL.users().messages().get(userId=user_id, id=m_id).execute(http=http_session))
@@ -282,7 +278,6 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
         log_to_hec("Error: Could not get message_id={} - {}".format(m_id, err))
         return
 
-    log_to_hec("Step={}".format("4"))
 
     message = json.loads(message)
 
@@ -307,7 +302,6 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
     parser = HeaderParser()
     msg = email.message_from_string(str(file_data, 'utf-8'))
 
-    log_to_hec("Step={}".format("5"))
 
     payload = {}
 
@@ -367,8 +361,6 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
         return
 
 
-    log_to_hec("Step={}".format("6"))
-
     local_domains_string = '|'.join(map(lambda x: x.decode('utf-8'), local_domains))
     regex = '^(?!({0})).*'.format(local_domains_string)
 
@@ -390,10 +382,6 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
 
     payload["external_domains"] = external_domains
     payload["message_info"] = message_info
-
-    log_to_hec("Step={}".format("7"))
-
-    log_to_hec("include_body={}".format(include_body))
 
     include_body = int(include_body)
 
@@ -466,8 +454,6 @@ def collect_events(helper, ew):
     auth_token = opt_hec_token
 
     session_key = helper.context_meta['session_key']
-
-    log_to_hec("opt_include_body={}".format(opt_include_body))
 
     run(session_key, domain, opt_hostname, opt_hec_token, opt_batch_size, local_domains, opt_include_body)
     return
