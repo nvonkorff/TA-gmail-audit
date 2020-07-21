@@ -201,9 +201,10 @@ def mark_as_read(m_id, user_id, GMAIL, http_session):
     return
 
 
-def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains, domain, _APP_NAME, session_key):
+def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains, include_body, domain, _APP_NAME, session_key):
  
     log_to_hec("Processing message_id={}".format(m_id)) 
+    log_to_hec("include_body={}".format(include_body))
 
     # Random sleep time to reduce api rate limiting
     sec = randrange(2) 
@@ -222,6 +223,7 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
         log_to_hec("Error: Could not get message_id={} - {}".format(m_id, err))
         return
 
+    log_to_hec("Step={}".format("1"))
     message = json.loads(message)
 
     if 'error' in message:
@@ -239,6 +241,7 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
             log_to_hec("key=" + str(key) + " value=" + str(value))
         return
 
+    log_to_hec("Step={}".format("2"))
     body = ""
 
     if b.is_multipart():
@@ -271,11 +274,15 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
 
     body_data[m_id] = cleaned_body
 
+    log_to_hec("Step={}".format("3"))
+
     try:
         message = json.dumps(GMAIL.users().messages().get(userId=user_id, id=m_id).execute(http=http_session))
     except Exception as err:
         log_to_hec("Error: Could not get message_id={} - {}".format(m_id, err))
         return
+
+    log_to_hec("Step={}".format("4"))
 
     message = json.loads(message)
 
@@ -300,25 +307,27 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
     parser = HeaderParser()
     msg = email.message_from_string(str(file_data, 'utf-8'))
 
-    headers = {}
+    log_to_hec("Step={}".format("5"))
+
+    payload = {}
 
     partno = 0
     for part in msg.walk():
         partkey = "part" + str(partno)
         for key, value in part.items():
             if partno == 0:
-                headers.update({key : value})
+                payload.update({key : value})
             else:
-                if partkey in headers:
-                    headers[partkey].update({key : value})
+                if partkey in payload:
+                    payload[partkey].update({key : value})
                 else:
-                    headers[partkey] = ({key : value})
+                    payload[partkey] = ({key : value})
         partno += 1
 
-    to_addr = headers.get("To","undisclosed-recipients")
-    cc_addr = headers.get("CC","")
+    to_addr = payload.get("To","undisclosed-recipients")
+    cc_addr = payload.get("CC","")
     to_addr = ('{0} {1}'.format(to_addr, cc_addr))
-    from_addr = headers.get("From","")
+    from_addr = payload.get("From","")
 
     if m_id in body_data:
 
@@ -334,7 +343,7 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
              email_links.append(link_url)
 
         if email_links:
-             headers["links"] = email_links
+             payload["links"] = email_links
 
     # Determine direction of message based on domains in from/to addresses
     from_domain = []
@@ -358,6 +367,7 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
         return
 
 
+    log_to_hec("Step={}".format("6"))
 
     local_domains_string = '|'.join(map(lambda x: x.decode('utf-8'), local_domains))
     regex = '^(?!({0})).*'.format(local_domains_string)
@@ -378,8 +388,18 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
     elif from_domain.encode('utf-8') in local_domains and len(external_domains) > 0:
         message_info = "outbound"
 
-    headers["external_domains"] = external_domains
-    headers["message_info"] = message_info
+    payload["external_domains"] = external_domains
+    payload["message_info"] = message_info
+
+    log_to_hec("Step={}".format("7"))
+
+    log_to_hec("include_body={}".format(include_body))
+
+    include_body = int(include_body)
+
+    if include_body == 1:
+        log_to_hec("Including body for {}".format(m_id))
+        payload["body"] = body_payload
 
     if 'Date' in msg:
         msg_date = msg['Date']
@@ -400,7 +420,7 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
     # eventtime = time.time()
     sourcetype = "gmail:audit:headers"
 
-    send_to_splunk(splunk_host, auth_token, headers, sourcetype, eventtime)
+    send_to_splunk(splunk_host, auth_token, payload, sourcetype, eventtime)
 
     # Mark the messages as read
     mark_as_read(m_id, user_id, GMAIL, http_session)
@@ -409,7 +429,7 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
 
     return
 
-def process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains, batch_size, domain, _APP_NAME, session_key):
+def process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains, include_body, batch_size, domain, _APP_NAME, session_key):
 
     max_threads = int(batch_size)
     log_to_hec("max_threads={}".format(batch_size))
@@ -417,7 +437,7 @@ def process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_do
     with ThreadPoolExecutor(max_workers=max_threads) as executor:
         futures = []
         for m_id in message_ids:
-            futures = executor.submit(process_message, m_id, user_id, GMAIL, splunk_host, auth_token, local_domains, domain, _APP_NAME, session_key)
+            futures = executor.submit(process_message, m_id, user_id, GMAIL, splunk_host, auth_token, local_domains, include_body, domain, _APP_NAME, session_key)
 
     return
 
@@ -433,6 +453,7 @@ def collect_events(helper, ew):
     opt_hostname = helper.get_arg('hostname')
     opt_batch_size = helper.get_arg('batch_size')
     opt_local_domains = helper.get_arg('local_domains')
+    opt_include_body = helper.get_arg('include_body')
 
     local_domains = [x.strip() for x in opt_local_domains.split(',')]
 
@@ -446,7 +467,9 @@ def collect_events(helper, ew):
 
     session_key = helper.context_meta['session_key']
 
-    run(session_key, domain, opt_hostname, opt_hec_token, opt_batch_size, local_domains)
+    log_to_hec("opt_include_body={}".format(opt_include_body))
+
+    run(session_key, domain, opt_hostname, opt_hec_token, opt_batch_size, local_domains, opt_include_body)
     return
 
 def refresh_auth_token(domain, app_name, session_key):
@@ -539,7 +562,7 @@ def auth_http(domain, app_name, session_key):
 
     return http_session
 
-def run(session_key, domain, splunk_host, auth_token, batch_size, local_domains):
+def run(session_key, domain, splunk_host, auth_token, batch_size, local_domains, include_body):
 
     script = sys.argv[0]
     log_to_hec("Starting: " + script)
@@ -581,7 +604,7 @@ def run(session_key, domain, splunk_host, auth_token, batch_size, local_domains)
         for msg in msg_list:
             m_id = msg['id'] # get id of individual message
             message_ids.append(m_id)
-        process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains, batch_size, domain, _APP_NAME, session_key)
+        process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains, include_body, batch_size, domain, _APP_NAME, session_key)
         processed_message_count += len(msg_list)
 
         log_msg = ("Processed=" + str(processed_message_count))
@@ -618,7 +641,7 @@ def run(session_key, domain, splunk_host, auth_token, batch_size, local_domains)
             m_id = msg['id'] # get id of individual message
             message_ids.append(m_id)
 
-        process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains, batch_size)
+        process_batch(message_ids, user_id, GMAIL, splunk_host, auth_token, local_domains, include_body, batch_size)
 
         processed_message_count += len(msg_list)
 

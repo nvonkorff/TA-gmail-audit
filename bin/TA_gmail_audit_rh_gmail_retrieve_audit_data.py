@@ -83,7 +83,13 @@ fields = [
             max_len=8192, 
         )
     ), 
-
+    field.RestField(
+        'include_body',
+        required=True,
+        encrypted=False,
+        default=0,
+        validator=None
+    ),
     field.RestField(
         'disabled',
         required=False,
