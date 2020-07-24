@@ -361,7 +361,7 @@
                         {
                             "field": "include_body",
                             "label": "Include email body",
-                            "help": "Include body of email as well as headers.",
+                            "help": "Include body of email as well as headers. WARNING: Security/privacy implications and increased license/indexing/storage requirements. Use with caution.",
                             "required": false,
                             "type": "checkbox",
                             "defaultValue": 0
