@@ -18,6 +18,7 @@ import splunk.appserver.mrsparkle.lib.util as util
 import string
 import sys
 import time
+import hashlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from gmail_Utilities import KennyLoggins, Utilities
 from gmail_Utilities import Utilities
@@ -296,7 +297,6 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
                 att_id=part['body']['attachmentId']
                 att=GMAIL.users().messages().attachments().get(userId=user_id, messageId=m_id,id=att_id).execute(http=http_session)
                 data=att['data']
-
             file_data = base64.urlsafe_b64decode(data.encode('UTF-8'))
 
     parser = HeaderParser()
@@ -304,10 +304,37 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
 
 
     payload = {}
+    attachments = {}
 
     partno = 0
+    attachment = 0
+
     for part in msg.walk():
         partkey = "part" + str(partno)
+        content_disposition = str(part.get('Content-Disposition'))
+        
+        if "filename" in content_disposition:
+
+            #extract filename and attachment base64 data
+            filename = part.get_filename()
+            attbase64 = part.get_payload()
+
+            #base64 decode the attachment
+            base64decode = base64.b64decode(attbase64)
+
+            #create hashes for the attachment
+            attmd5 = hashlib.md5(base64decode).hexdigest()
+            attsha1 = hashlib.sha1(base64decode).hexdigest()
+            attsha256 = hashlib.sha256(base64decode).hexdigest()
+
+            #update attachments dict with filename and hash info
+            attachments.update({filename + '-md5' : attmd5})
+            attachments.update({filename + '-sha1' : attsha1})
+            attachments.update({filename + '-sha256' : attsha256})
+
+            #create payload info for Splunk ingest
+            payload['attachments'] = attachments
+
         for key, value in part.items():
             if partno == 0:
                 payload.update({key : value})
@@ -341,7 +368,6 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
 
     # Determine direction of message based on domains in from/to addresses
     from_domain = []
-
     to_domains = []
     to_domain = []
 
@@ -364,11 +390,9 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
     local_domains_string = '|'.join(map(lambda x: x.decode('utf-8'), local_domains))
     regex = '^(?!({0})).*'.format(local_domains_string)
 
-    # log_to_hec("regex={}".format(regex))
-
     map(lambda x: x.decode('utf-8'), local_domains)
 
-    # log_to_hec('to_domains: {0} from_domain: {1} to_addr: {2} local_domains: {3}'.format(to_domain, from_domain, to_addr, local_domains))
+    #log_to_hec('to_domains: {0} from_domain: {1} to_addr: {2} local_domains: {3}'.format(to_domain, from_domain, to_addr, local_domains))
 
     r = re.compile(regex, re.IGNORECASE)
     external_domains = list(filter(r.match, to_domain))
