@@ -67,7 +67,7 @@ class ModInputgmail_retrieve_audit_data(modinput_wrapper.base_modinput.BaseModIn
                                          required_on_create=True,
                                          required_on_edit=False))
         scheme.add_argument(smi.Argument("include_body", title="Include domains",
-                                         description="Include email body along with email headers.",
+                                         description="Include body of email as well as headers. WARNING: Security/privacy implications and increased license/indexing/storage requirements. Use with caution.",
                                          required_on_create=True,
                                          required_on_edit=False))
         return scheme
