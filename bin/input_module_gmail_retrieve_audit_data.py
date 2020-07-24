@@ -307,7 +307,6 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
     attachments = {}
 
     partno = 0
-    attachment = 0
 
     for part in msg.walk():
         partkey = "part" + str(partno)
@@ -392,7 +391,7 @@ def process_message(m_id, user_id, GMAIL, splunk_host, auth_token, local_domains
 
     map(lambda x: x.decode('utf-8'), local_domains)
 
-    #log_to_hec('to_domains: {0} from_domain: {1} to_addr: {2} local_domains: {3}'.format(to_domain, from_domain, to_addr, local_domains))
+    # log_to_hec('to_domains: {0} from_domain: {1} to_addr: {2} local_domains: {3}'.format(to_domain, from_domain, to_addr, local_domains))
 
     r = re.compile(regex, re.IGNORECASE)
     external_domains = list(filter(r.match, to_domain))
